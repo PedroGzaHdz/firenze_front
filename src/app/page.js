@@ -26,9 +26,9 @@ export default function HomePage() {
         <div className="flex-1 flex flex-col">
           {/* Área de mensajes del chat */}
           <main className="flex-1 overflow-auto flex flex-col justify-between">
-            <div className="w-full px-20 py-12">
+            <div className="w-full px-20 py-8">
               {/* Mensaje de bienvenida */}
-              <div className="mb-12 text-center">
+              <div className="mb-8 text-center">
                 <h1 className="text-3xl  bg-gradient-to-r text-blue-600 bg-clip-text mb-4 text-left">
                   Hey Giulio!
                 </h1>
@@ -93,12 +93,12 @@ export default function HomePage() {
               </div>
 
               {/* Área de mensajes del chat (vacía por ahora) */}
-              <div className="space-y-4 mb-8">
+              <div className="space-y-4 mb-2">
                 {/* Aquí irán los mensajes del chat */}
               </div>
             </div>
             {/* ChatComponent centrado y abajo */}
-            <div className="w-full h-1/5 flex justify-center items-end px-20 py-4">
+            <div className="w-full h-1/5 flex justify-center items-end px-20 py-0">
               <div className="w-full h-full">
                 <ChatComponent />
               </div>

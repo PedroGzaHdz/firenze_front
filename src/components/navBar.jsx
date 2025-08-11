@@ -58,7 +58,7 @@ const Sidebar = ({ setFlowStep, flowStep, children }) => {
   return (
     <div className="h-screen flex flex-col bg-slate-950">
       {/* Header superior que abarca todo el ancho */}
-      <div className="w-full bg-slate-900/50 border-b border-slate-700/50 flex items-center justify-between px-6 py-4">
+      <div className="w-full bg-slate-900/50 border-b border-slate-700/50 flex items-center justify-between px-6 py-2">
         {/* Logo */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">

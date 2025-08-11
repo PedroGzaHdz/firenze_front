@@ -58,7 +58,7 @@ export default function UploadDocumentsModal({ isOpen, onClose, setFlowStep }) {
 
   return (
     <div className="h-[100vh] w-[100vw] bg-opacity-50 fixed inset-0 z-50">
-      <div className="fixed right-0 top-0 bottom-0 w-2/5 bg-black bg-opacity-70 z-50">
+      <div className="fixed right-0 top-0 bottom-0 w-auto max-w-2/4 bg-black bg-opacity-70 z-50">
         <div className="bg-[#13132f] rounded-lg w-full h-full overflow-y-auto text-white flex flex-col">
           <div className="p-6 flex-grow overflow-y-auto">
             <h2 className="text-blue-400 text-xl font-medium mb-4">
@@ -66,23 +66,23 @@ export default function UploadDocumentsModal({ isOpen, onClose, setFlowStep }) {
             </h2>
 
             {/* Document Cards Grid */}
-            <div className="bg-gray-200 bg-opacity-90 p-6 rounded-lg mb-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+            <div className="bg-gray-200 bg-opacity-90 p-6 rounded-lg mb-6 overflow-x-auto">
+              <div className="flex flex-row gap-4 w-max">
                 {documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="bg-white rounded-lg p-2 flex flex-col items-center"
-                  >
-                    <div className="w-full h-20 bg-amber-50 rounded mb-2 flex items-center justify-center">
-                      <img
-                        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5ratk3Gc3zutXXlq36tG09B9KxnpHIL4upA&s"
-                        alt="Document thumbnail"
-                        className="h-full object-cover"
-                      />
+                    <div
+                        key={doc.id}
+                        className="bg-white rounded-lg p-2 flex flex-col items-center min-w-[10vw] flex-shrink-0"
+                    >
+                      <div className="h-20 w-full bg-amber-50 rounded mb-2 flex items-center justify-center">
+                        <img
+                            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5ratk3Gc3zutXXlq36tG09B9KxnpHIL4upA&s"
+                            alt="Document thumbnail"
+                            className="h-full object-cover"
+                        />
+                      </div>
+                      <p className="text-black text-sm font-medium">{doc.name}</p>
+                      <button className="text-blue-500 text-xs">Comments</button>
                     </div>
-                    <p className="text-black text-sm font-medium">{doc.name}</p>
-                    <button className="text-blue-500 text-xs">Comments</button>
-                  </div>
                 ))}
               </div>
             </div>
