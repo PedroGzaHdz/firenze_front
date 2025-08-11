@@ -26,13 +26,13 @@ export default function HomePage() {
         <div className="flex-1 flex flex-col">
           {/* Área de mensajes del chat */}
           <main className="flex-1 overflow-auto flex flex-col justify-between">
-            <div className="w-full px-20 py-8">
+            <section className="w-full px-20 py-8">
               {/* Mensaje de bienvenida */}
-              <div className="mb-8 text-center">
-                <h1 className="font-mondwest text-3xl  bg-gradient-to-r text-blue-600 bg-clip-text mb-4 text-left">
+              <article className="mb-8 text-center">
+                <h1 className="font-mondwest font-bold text-5xl  bg-gradient-to-r text-blue-600 bg-clip-text mb-4 text-left">
                   Hey Giulio!
                 </h1>
-                <p className="text-xl  text-blue-600  font-medium mb-8 text-left">
+                <p className="text-3xl font-mondwest font-bold text-blue-600  mb-8 text-left">
                   What can we discover for you today?
                 </p>
 
@@ -58,7 +58,7 @@ export default function HomePage() {
                     </div>
                     {/* Load more button */}
                     <div className="text-left flex items-center justify-between">
-                      <button className="text-blue-500 hover:text-blue-600 font-medium transition-colors duration-200 flex items-center gap-2 ml-2">
+                      <button className="text-blue-500 hover:text-blue-600 font-medium font-family-mondwest transition-colors duration-200 flex items-center gap-2 ml-2">
                         Load 4 more options
                       </button>
                     </div>
@@ -69,14 +69,14 @@ export default function HomePage() {
                     <div className="mt-8">
                       <div className="w-2/5 bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                         <div className="flex items-center justify-between gap-4">
-                          <p className="text-gray-600 text-sm leading-relaxed flex-1 text-left">
+                          <p className="text-gray-600 text-sm leading-relaxed flex-1 text-left font-family-founders">
                             What vendors should we prepay in order to boost
                             margins on X product?
                           </p>
 
                           <div className="relative flex-shrink-0">
                             <button className="w-full bg-white  rounded-lg px-3 py-2.5 flex items-center justify-between hover:border-gray-300 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500">
-                              <span className="text-blue-500 text-sm font-medium">
+                              <span className="text-blue-500 text-sm font-medium font-family-mondwest">
                                 SPF 30 Sunscreen
                               </span>
                               <ChevronDown
@@ -90,19 +90,18 @@ export default function HomePage() {
                     {flowStep >= 3 && <DocumentTermsCard />}
                   </>
                 )}
-              </div>
-
+              </article>
               {/* Área de mensajes del chat (vacía por ahora) */}
-              <div className="space-y-4 mb-2">
+              <article className="space-y-4 mb-2">
                 {/* Aquí irán los mensajes del chat */}
-              </div>
-            </div>
+              </article>
+            </section>
             {/* ChatComponent centrado y abajo */}
-            <div className="w-full h-1/5 flex justify-center items-end px-20 py-0">
+            <section className="w-full h-1/5 flex justify-center items-end px-20 py-0">
               <div className="w-full h-full">
                 <ChatComponent />
               </div>
-            </div>
+            </section>
           </main>
         </div>
       </Sidebar>

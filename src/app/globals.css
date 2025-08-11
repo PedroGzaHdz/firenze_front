@@ -42,13 +42,234 @@
   font-display: swap;
 }
 
+/* Fuente Founders Grotesk - Light */
+@font-face {
+  font-family: 'Founders Grotesk';
+  src: url('/fonts/FoundersGrotesk-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Founders Grotesk';
+  src: url('/fonts/FoundersGrotesk-LightItalic.otf') format('opentype');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Fuente Founders Grotesk - Regular */
+@font-face {
+  font-family: 'Founders Grotesk';
+  src: url('/fonts/FoundersGrotesk-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Founders Grotesk';
+  src: url('/fonts/FoundersGrotesk-RegularItalic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Fuente Founders Grotesk - Medium */
+@font-face {
+  font-family: 'Founders Grotesk';
+  src: url('/fonts/FoundersGrotesk-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Founders Grotesk';
+  src: url('/fonts/FoundersGrotesk-MediumItalic.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Fuente Founders Grotesk - Semibold */
+@font-face {
+  font-family: 'Founders Grotesk';
+  src: url('/fonts/FoundersGrotesk-Semibold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Founders Grotesk';
+  src: url('/fonts/FoundersGrotesk-SemiboldItalic.otf') format('opentype');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Fuente Founders Grotesk - Bold */
+@font-face {
+  font-family: 'Founders Grotesk';
+  src: url('/fonts/FoundersGrotesk-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Founders Grotesk';
+  src: url('/fonts/FoundersGrotesk-BoldItalic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Fuente Founders Grotesk Condensed - Light */
+@font-face {
+  font-family: 'Founders Grotesk Condensed';
+  src: url('/fonts/FoundersGroteskCond-Lt.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fuente Founders Grotesk XCondensed - Bold */
+@font-face {
+  font-family: 'Founders Grotesk XCondensed';
+  src: url('/fonts/FoundersGroteskXCond-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fuente Founders Grotesk XCondensed - Light */
+@font-face {
+  font-family: 'Founders Grotesk XCondensed';
+  src: url('/fonts/FoundersGroteskXCond-Lt.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fuente PP Editorial New - Ultralight */
+@font-face {
+  font-family: 'PP Editorial New';
+  src: url('/fonts/PPEditorialNew-Ultralight.woff2') format('woff2'),
+  url('/fonts/PPEditorialNew-Ultralight.woff') format('woff'),
+  url('/fonts/PPEditorialNew-Ultralight.ttf') format('truetype');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Editorial New';
+  src: url('/fonts/PPEditorialNew-UltralightItalic.woff2') format('woff2'),
+  url('/fonts/PPEditorialNew-UltralightItalic.woff') format('woff'),
+  url('/fonts/PPEditorialNew-UltralightItalic.ttf') format('truetype');
+  font-weight: 100;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Fuente PP Editorial New - Thin */
+@font-face {
+  font-family: 'PP Editorial New';
+  src: url('/fonts/PPEditorialNew-Thin.woff2') format('woff2'),
+  url('/fonts/PPEditorialNew-Thin.woff') format('woff'),
+  url('/fonts/PPEditorialNew-Thin.ttf') format('truetype');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Editorial New';
+  src: url('/fonts/PPEditorialNew-ThinItalic.woff2') format('woff2'),
+  url('/fonts/PPEditorialNew-ThinItalic.woff') format('woff'),
+  url('/fonts/PPEditorialNew-ThinItalic.ttf') format('truetype');
+  font-weight: 200;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Fuente PP Editorial New - Regular */
+@font-face {
+  font-family: 'PP Editorial New';
+  src: url('/fonts/PPEditorialNew-Regular.woff2') format('woff2'),
+  url('/fonts/PPEditorialNew-Regular.woff') format('woff'),
+  url('/fonts/PPEditorialNew-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Editorial New';
+  src: url('/fonts/PPEditorialNew-Italic.woff2') format('woff2'),
+  url('/fonts/PPEditorialNew-Italic.woff') format('woff'),
+  url('/fonts/PPEditorialNew-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Fuente PP Editorial New - Heavy */
+@font-face {
+  font-family: 'PP Editorial New';
+  src: url('/fonts/PPEditorialNew-Heavy.woff2') format('woff2'),
+  url('/fonts/PPEditorialNew-Heavy.woff') format('woff'),
+  url('/fonts/PPEditorialNew-Heavy.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Editorial New';
+  src: url('/fonts/PPEditorialNew-HeavyItalic.woff2') format('woff2'),
+  url('/fonts/PPEditorialNew-HeavyItalic.woff') format('woff'),
+  url('/fonts/PPEditorialNew-HeavyItalic.ttf') format('truetype');
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Fuente PP Editorial New - Bold */
+@font-face {
+  font-family: 'PP Editorial New';
+  src: url('/fonts/PPEditorialNew-Bold.woff2') format('woff2'),
+  url('/fonts/PPEditorialNew-Bold.woff') format('woff'),
+  url('/fonts/PPEditorialNew-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Editorial New';
+  src: url('/fonts/PPEditorialNew-BoldItalic.woff2') format('woff2'),
+  url('/fonts/PPEditorialNew-BoldItalic.woff') format('woff'),
+  url('/fonts/PPEditorialNew-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 /* Definir las fuentes personalizadas */
 @theme {
   /* PP Mondwest como fuente sans por defecto */
   --font-family-sans: 'PP Mondwest', ui-sans-serif, system-ui, sans-serif;
-  /* PP Neue Bit como fuente alternativa */
+  /* Fuentes alternativas */
   --font-family-neuebit: 'PP Neue Bit', ui-monospace, monospace;
   --font-family-mondwest: 'PP Mondwest', sans-serif;
+  --font-family-founders: 'Founders Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-family-founders-condensed: 'Founders Grotesk Condensed', ui-sans-serif, system-ui, sans-serif;
+  --font-family-founders-xcondensed: 'Founders Grotesk XCondensed', ui-sans-serif, system-ui, sans-serif;
+  --font-family-editorial: 'PP Editorial New', ui-serif, Georgia, serif;
 
   /* Colores */
   --color-background: light-dark(#ffffff, #0a0a0a);

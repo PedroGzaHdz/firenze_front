@@ -1,25 +1,27 @@
 import React from "react";
+import ImgNew from '../assets/imgNew.png'
+import Image from "next/image";
 
 export default function DocumentTermsCard() {
   return (
     <div className="shadow-lg mt-6  rounded-xl p-8 flex flex-row gap-8 max-w-6xl mx-auto text-xs text-left text-black bg-white">
       {/* Left: Information */}
       <div className="flex-3/5 pr-10">
-        <p className="mb-4 font-light">
+        <p className="mb-4 font-light font-family-founders">
           Based upon reading all available documentation (18 documents), emails
           (55), and MSAs (3) I’ve come up with a set of document terms to
           present to each vendor to reduce overall costs by 2.2% and only
           affecting 14.9% free cash flows by end of month.
         </p>
-        <p className="mb-6 font-light">
+        <p className="mb-6 font-light font-family-founders">
           It involves taking advantage of the following information:
         </p>
 
         <div className="mb-6">
-          <div className="font-bold mb-2">
+          <div className="font-bold mb-2 font-family-editorial">
             Current MSAs Accounting for previous invoice history
           </div>
-          <div className="flex flex-col gap-1 font-light">
+          <div className="flex flex-col gap-1 font-light font-family-editorial">
             <div className="flex gap-8">
               <span className="w-40">Inv-882991-max.pdf</span>
               <span className="w-40">Supplychain.co</span>
@@ -34,17 +36,17 @@ export default function DocumentTermsCard() {
         </div>
 
         <div className="mb-6">
-          <div className="font-bold mb-2">
+          <div className="font-bold mb-2 font-family-editorial">
             Credit Facility via Vendor Connect
           </div>
-          <div className="font-light">
+          <div className="font-light font-family-editorial">
             JP Morgan &nbsp; | &nbsp; 1.1% interest on $35,000 RLOC – 30 Days
           </div>
         </div>
 
         <div className="mb-8">
-          <div className="font-bold mb-2">Potential Gains</div>
-          <div className="flex flex-col gap-1 font-light">
+          <div className="font-bold mb-2 font-family-editorial">Potential Gains</div>
+          <div className="flex flex-col gap-1 font-light font-family-editorial">
             <div className="flex gap-8">
               <span className="w-72">
                 Costs: 1.1% interest on $35,000 RLOC – 30 Days
@@ -66,34 +68,35 @@ export default function DocumentTermsCard() {
           <div className="flex flex-col gap-2 flex-1/2">
             {/* Card 1 */}
             <div className="border-[0.5px] border-gray-300 rounded-xl overflow-hidden shadow-sm bg-white flex flex-col items-center p-4">
-              <img
-                src="https://placehold.co/240x160/e2e8f0/1e40af?text=Document"
+              <Image
+                  src={ImgNew}
+                // src="https://placehold.co/240x160/e2e8f0/1e40af?text=Document"
                 className="w-24 h-16 object-cover rounded mb-2"
                 alt="Prepayment Letter"
               />
-              <p className="w-full text-xs font-light  text-left">
+              <p className="w-full text-xs font-light  text-left font-family-mondwest">
                 Prepayment Letter
               </p>
-              <p className=" w-full font-light text-xs text-left text-blue-800">
+              <p className=" w-full font-light text-xs text-left text-blue-800 font-family-mondwest">
                 Email Masters and Sons
               </p>
             </div>
             {/* Card 2 */}
             <div className="border-[0.5px] border-gray-300 rounded-xl overflow-hidden shadow-sm bg-white flex flex-col items-center p-4 mt-2">
-              <img
-                src="https://placehold.co/240x160/e2e8f0/1e40af?text=Access"
+              <Image
+                  src={ImgNew}
                 className="w-24 h-16 object-cover rounded mb-2"
                 alt="LOC Access"
               />
-              <p className="w-full text-xs font-light text-left">LOC Access</p>
-              <p className="w-full text-xs font-light text-left text-blue-800">
+              <p className="w-full text-xs font-light text-left font-family-mondwest">LOC Access</p>
+              <p className="w-full text-xs font-light text-left text-blue-800 font-family-mondwest">
                 Agent Sign
               </p>
             </div>
           </div>
           {/* Message */}
           <div className="h-full font-light mt-2 mb-2 text-left w-full">
-            <p>
+            <p className="font-family-founders">
               Hey, John, we'd like to let you know that we will be pre-paying
               our order for invoice #582714684 for the amount of $23,000 and
               have included the discount into the line item B form as agreed
