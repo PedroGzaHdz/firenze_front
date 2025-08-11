@@ -61,7 +61,7 @@ export default function UploadDocumentsModal({ isOpen, onClose, setFlowStep }) {
       <div className="fixed right-0 top-0 bottom-0 w-auto max-w-2/4 bg-black bg-opacity-70 z-50">
         <div className="bg-[#13132f] rounded-lg w-full h-full overflow-y-auto text-white flex flex-col">
           <div className="p-6 flex-grow overflow-y-auto">
-            <h2 className="text-blue-400 text-xl font-medium mb-4">
+            <h2 className="text-[#3C6EDD] font-family-mondwest text-xl font-medium mb-4">
               Upload documents
             </h2>
 
@@ -92,17 +92,17 @@ export default function UploadDocumentsModal({ isOpen, onClose, setFlowStep }) {
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-white">
-                    <th className="py-6 pr-6 text-sm font-medium">Vendor</th>
-                    <th className="py-6 pr-6 text-sm font-medium">Submitted</th>
-                    <th className="py-6 pr-6 text-sm font-medium">Status</th>
-                    <th className="py-6 pr-6 text-sm font-medium">
+                    <th className="py-6 pr-6 text-lg font-semibold font-family-founders">Vendor</th>
+                    <th className="py-6 pr-6 text-lg font-semibold font-family-founders">Submitted</th>
+                    <th className="py-6 pr-6 text-lg font-semibold font-family-founders">Status</th>
+                    <th className="py-6 pr-6 text-lg font-semibold font-family-founders">
                       AI Analysis Report
                     </th>
-                    <th className="py-6 pr-6 text-sm font-medium w-[120px]">
+                    <th className="py-6 pr-6 text-lg font-semibold w-[120px] font-family-founders">
                       Doc Type
                     </th>
-                    <th className="py-6 pr-6 text-sm font-medium">Amount</th>
-                    <th className="py-6 pr-2 text-sm font-sm"></th>
+                    <th className="py-6 pr-6 text-lg font-semibold font-family-founders">Amount</th>
+                    <th className="py-6 pr-2 text-lg font-sm"></th>
                   </tr>
                 </thead>
                 <tbody className="font-light">
@@ -111,9 +111,9 @@ export default function UploadDocumentsModal({ isOpen, onClose, setFlowStep }) {
                       key={index}
                       className="border-t text-sm border-gray-700 hover:bg-gray-800/30"
                     >
-                      <td className="py-8 pr-2">{row.vendor}</td>
-                      <td className="py-8 pr-2">{row.submitted}</td>
-                      <td className="py-8 pr-2">
+                      <td className="py-8 pr-2 font-family-founders font-normal">{row.vendor}</td>
+                      <td className="py-8 pr-2 font-family-founders font-normal">{row.submitted}</td>
+                      <td className="py-8 pr-2 font-family-founders font-normal">
                         <span
                           className={`flex items-center ${
                             row.status === "Approved"
@@ -141,16 +141,17 @@ export default function UploadDocumentsModal({ isOpen, onClose, setFlowStep }) {
                           </svg>
                         </span>
                       </td>
-                      <td className="py-8 pr-2 truncate max-w-[180px]">
+                      <td className="py-8 pr-2 truncate max-w-[180px] font-family-founders font-normal">
                         {row.report}
                       </td>
-                      <td className="py-8 pr-2">
-                        <span className="bg-gray-300 text-gray-800 text-xs px-2 py-1 rounded-full">
+                      <td className="py-8 pr-2 font-family-founders font-normal">
+                        <span className="bg-gray-300 text-gray-800 text-xs flex items-center
+                          justify-center py-1 rounded-full px-5 w-[70%] ">
                           {row.docType}
                         </span>
                       </td>
-                      <td className="py-8 pr-2">{row.amount}</td>
-                      <td className="py-8 pr-2 text-right">
+                      <td className="py-8 pr-2 font-family-founders font-normal">{row.amount}</td>
+                      <td className="py-8 pr-2 text-right font-family-founders font-normal">
                         <EyeIcon className="h-4 w-4 text-blue-800 inline-block" />
                       </td>
                     </tr>
@@ -164,12 +165,12 @@ export default function UploadDocumentsModal({ isOpen, onClose, setFlowStep }) {
           <div className="flex justify-end space-x-3 p-6 mt-auto border-gray-700">
             <button
               onClick={onClose}
-              className="px-4 py-1.5 rounded-lg bg-transparent border border-gray-500 text-white text-sm"
+              className="px-4 py-1.5 rounded-lg bg-transparent font-family-founders text-white text-sm"
             >
               Cancel
             </button>
             <button
-              className="px-4 py-1.5 rounded-lg bg-blue-500 text-white text-sm"
+              className="px-4 py-1.5 rounded-lg bg-blue-500 text-white text-sm font-family-founders"
               onClick={onClose}
             >
               Upload and file
