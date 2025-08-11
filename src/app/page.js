@@ -29,7 +29,7 @@ export default function HomePage() {
             <div className="w-full px-20 py-8">
               {/* Mensaje de bienvenida */}
               <div className="mb-8 text-center">
-                <h1 className="text-3xl  bg-gradient-to-r text-blue-600 bg-clip-text mb-4 text-left">
+                <h1 className="font-mondwest text-3xl  bg-gradient-to-r text-blue-600 bg-clip-text mb-4 text-left">
                   Hey Giulio!
                 </h1>
                 <p className="text-xl  text-blue-600  font-medium mb-8 text-left">
