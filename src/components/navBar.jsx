@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   CubeIcon,
   PlusIcon,
@@ -6,84 +6,94 @@ import {
   CloudArrowDownIcon,
   Square3Stack3DIcon,
   ArrowUturnUpIcon,
-} from "@heroicons/react/24/outline";
-import { EyeIcon } from "lucide-react";
-import { SiGmail, SiDropbox } from "react-icons/si";
-import Image from "next/image";
-import Logo from "../assets/logo.png";
+} from '@heroicons/react/24/outline';
+import { EyeIcon } from 'lucide-react';
+import { SiGmail, SiDropbox } from 'react-icons/si';
+import Image from 'next/image';
+import Logo from '../assets/logo.png';
+import { useGlobalContext } from '@/context/globalContext';
+import SidebarItem from '@/components/navbar/sidebarItem';
+import { useRouter } from 'next/navigation';
+import RecentViewSideBar from '@/components/navbar/recentViewSideBar';
 
-const Sidebar = ({ setFlowStep, flowStep, children }) => {
-  const [activeItem, setActiveItem] = useState(0);
+const Sidebar = ({ children }) => {
+  const router = useRouter();
+  const { flowStep, setFlowStep } = useGlobalContext();
+  const [activeItem, setActiveItem] = useState(1);
   const [showInformationalView, setShowInformationalView] = useState(false);
-  const [recentViews, setRecentViews] = useState(false);
+  const [showInformationalNavbar, setShowInformationalNavbar] = useState(false);
 
   const [invoices] = useState([
     {
       id: 1,
-      provider: "Provider A",
-      amount: "$1,200.00",
-      nameFile: "Invoice_A.pdf",
+      provider: 'Provider A',
+      amount: '$1,200.00',
+      nameFile: 'Invoice_A.pdf',
     },
     {
       id: 2,
-      provider: "Provider B",
-      amount: "$850.00",
-      nameFile: "Invoice_B.pdf",
+      provider: 'Provider B',
+      amount: '$850.00',
+      nameFile: 'Invoice_B.pdf',
     },
     {
       id: 3,
-      provider: "Provider C",
-      amount: "$2,450.00",
-      nameFile: "Invoice_C.pdf",
+      provider: 'Provider C',
+      amount: '$2,450.00',
+      nameFile: 'Invoice_C.pdf',
     },
     {
       id: 4,
-      provider: "Provider D",
-      amount: "$3,300.00",
-      nameFile: "Invoice_D.pdf",
+      provider: 'Provider D',
+      amount: '$3,300.00',
+      nameFile: 'Invoice_D.pdf',
     },
     {
       id: 5,
-      provider: "Provider E",
-      amount: "$1,750.00",
-      nameFile: "Invoice_E.pdf",
+      provider: 'Provider E',
+      amount: '$1,750.00',
+      nameFile: 'Invoice_E.pdf',
     },
   ]);
 
   const handleItemClick = (index) => {
     setActiveItem(index);
     // Mostrar el panel informacional cuando se hace clic en el primer item (BookOpenIcon)
-    setShowInformationalView(index === 1);
+    if (index === 1) {
+      setShowInformationalView(!showInformationalView);
+      setShowInformationalNavbar(false);
+    }
+
+    if (index === 0) {
+      setShowInformationalNavbar(!showInformationalNavbar);
+      setShowInformationalView(false);
+    }
   };
   return (
-    <div className="h-screen flex flex-col bg-slate-950">
+    <main className='flex h-screen flex-col bg-slate-950'>
       {/* Header superior que abarca todo el ancho */}
-      <div className="w-full bg-slate-900/50 border-b border-slate-700/50 flex items-center justify-between px-6 py-2">
+      <nav className='flex h-[10vh] w-full items-center justify-between border-b border-slate-700/50 bg-slate-900/50 px-6 py-2'>
         {/* Logo */}
-        <div className="flex items-center gap-3 rounded-lg">
-          <Image src={Logo} alt="logo"  width={29} height={29}/>
+        <div className='flex items-center gap-3 rounded-lg'>
+          <Image src={Logo} alt='logo' width={29} height={29} />
         </div>
 
         {/* Barra de búsqueda alineada a la izquierda */}
-        <div className="mx-10 flex-1 w-full">
-          <div className="relative my-2">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-4 w-4 text-black" />
+        <div className='mx-10 w-full flex-1'>
+          <div className='relative my-2'>
+            <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3'>
+              <MagnifyingGlassIcon className='h-4 w-4 text-black' />
             </div>
             <input
-              type="text"
-              placeholder="Search SKUs, Contracts, Vendors"
-              className="block w-1/3 pl-10 pr-3 py-2.5
-               border border-slate-600/50 rounded-full bg-[#D9D9D9]
-               text-black placeholder-black focus:outline-none
-               focus:ring-2 focus:ring-blue-500 focus:border-transparent
-               transition-all duration-200 font-family-mondwest"
+              type='text'
+              placeholder='Search SKUs, Contracts, Vendors'
+              className='font-family-mondwest block w-1/3 rounded-full border border-slate-600/50 bg-[#D9D9D9] py-2.5 pr-3 pl-10 text-black placeholder-black transition-all duration-200 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none'
             />
           </div>
         </div>
 
         {/* Avatar y elementos del usuario */}
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           {/*<div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-semibold text-sm">*/}
           {/*  ?*/}
           {/*</div>*/}
@@ -91,31 +101,38 @@ const Sidebar = ({ setFlowStep, flowStep, children }) => {
           {/*  G*/}
           {/*</div>*/}
         </div>
-      </div>
+      </nav>
 
       {/* Contenido principal */}
-      <div className="flex-1 flex">
+      <div className='flex flex-1'>
         {/* Sidebar lateral - solo 2 iconos */}
-        <div className="bg-slate-900/50 border-r border-slate-700/50 flex flex-col">
-          <div className="w-20 p-4">
-            <nav className="space-y-2">
+        <div className='flex flex-col border-r border-slate-700/50 bg-slate-900/50'>
+          <div className='w-20 p-4'>
+            <nav className='space-y-2'>
               <SidebarItem
-                icon={<Square3Stack3DIcon className="w-5 h-5" />}
+                icon={<Square3Stack3DIcon className='h-5 w-5' />}
                 active={activeItem === 0}
-                onClick={() => handleItemClick(0)}
+                onClick={() => {
+                  handleItemClick(0);
+                  router.push('/deep');
+                }}
               />
               <SidebarItem
-                icon={<CubeIcon className="w-5 h-5" />}
+                href='/'
+                icon={<CubeIcon className='h-5 w-5' />}
                 active={activeItem === 1}
-                onClick={() => handleItemClick(1)}
+                onClick={() => {
+                  handleItemClick(1);
+                  router.push('/');
+                }}
               />
               <SidebarItem
-                icon={<ArrowUturnUpIcon className="w-5 h-5" />}
+                icon={<ArrowUturnUpIcon className='h-5 w-5' />}
                 active={activeItem === 2}
                 onClick={() => handleItemClick(2)}
               />
               <SidebarItem
-                icon={<CloudArrowDownIcon className="w-5 h-5" />}
+                icon={<CloudArrowDownIcon className='h-5 w-5' />}
                 active={activeItem === 3}
                 onClick={() => handleItemClick(3)}
               />
@@ -125,27 +142,27 @@ const Sidebar = ({ setFlowStep, flowStep, children }) => {
 
         {/* Panel informacional (condicional) */}
         {showInformationalView && (
-          <div className="w-80 bg-slate-800/30 border-r border-slate-700/50 flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700/30">
+          <div className='flex w-80 flex-col border-r border-slate-700/50 bg-slate-800/30'>
+            <div className='flex items-center justify-between border-b border-slate-700/30 p-4'>
               <div>
-                <h3 className="text-[#3C6EDD] font-family-mondwest text-lg font-medium">
+                <h3 className='font-family-mondwest text-lg font-medium text-[#3C6EDD]'>
                   Informational View
                 </h3>
-                <p className="text-white text-base font-light mt-1 font-family-founders">
+                <p className='font-family-founders mt-1 text-base font-light text-white'>
                   {flowStep === 0 &&
-                    "Needed documents will update with each prompt."}
-                  {flowStep === 1 && "All documents for: SPF 30 Sunscreen"}
-                  {flowStep === 2 && "All documents for: SPF 30 Sunscreen"}
+                    'Needed documents will update with each prompt.'}
+                  {flowStep === 1 && 'All documents for: SPF 30 Sunscreen'}
+                  {flowStep === 2 && 'All documents for: SPF 30 Sunscreen'}
                 </p>
               </div>
-              <div className="flex h-full items-start">
+              <div className='flex h-full items-start'>
                 <button
                   onClick={() => {
                     setFlowStep(3);
                   }}
-                  className="text-white hover:text-white transition-colors p-1 hover:bg-slate-700/50 rounded"
+                  className='rounded p-1 text-white transition-colors hover:bg-slate-700/50 hover:text-white'
                 >
-                  <PlusIcon className="w-4 h-4" />
+                  <PlusIcon className='h-4 w-4' />
                 </button>
               </div>
             </div>
@@ -153,12 +170,12 @@ const Sidebar = ({ setFlowStep, flowStep, children }) => {
             {flowStep > 0 && (
               <>
                 {/* Invoices by providers */}
-                <div className="flex flex-row items-start justify-between p-4">
-                  <p className="text-[#3C6EDD] font-family-mondwest text-lg font-medium">
+                <div className='flex flex-row items-start justify-between p-4'>
+                  <p className='font-family-mondwest text-lg font-medium text-[#3C6EDD]'>
                     Invoices by providers
                   </p>
                   <button
-                    className="text-[#3C6EDD] font-family-mondwest text-xs font-medium"
+                    className='font-family-mondwest text-xs font-medium text-[#3C6EDD]'
                     onClick={() => setFlowStep(2)}
                   >
                     Add more
@@ -167,125 +184,91 @@ const Sidebar = ({ setFlowStep, flowStep, children }) => {
                 {invoices.map((invoice) => (
                   <div
                     key={invoice.id}
-                    className="flex flex-row mx-2 justify-between p-2
-                    border-b border-slate-700/30 hover:bg-slate-700/20
-                    cursor-pointer transition-all duration-200
-                    font-family-editorial"
+                    className='font-family-editorial mx-2 flex cursor-pointer flex-row justify-between border-b border-slate-700/30 p-2 transition-all duration-200 hover:bg-slate-700/20'
                   >
-                    <p className="text-white text-sm font-light ">
+                    <p className='text-sm font-light text-white'>
                       {invoice.nameFile}
                     </p>
-                    <p className="text-white text-sm font-light">
+                    <p className='text-sm font-light text-white'>
                       {invoice.provider}
                     </p>
-                    <button className="text-[#2A59FF] text-sm font-light mt-1">
-                      <EyeIcon className="w-4 h-4" />
+                    <button className='mt-1 text-sm font-light text-[#2A59FF]'>
+                      <EyeIcon className='h-4 w-4' />
                     </button>
                   </div>
                 ))}
-                <div className="flex flex-row items-start justify-between p-4">
-                  <p className="text-[#3C6EDD]  text-sm font-medium">
+                <div className='flex flex-row items-start justify-between p-4'>
+                  <p className='text-sm font-medium text-[#3C6EDD]'>
                     MSA with providers
                   </p>
-                  <button className="text-[#3C6EDD] text-sm font-medium">
+                  <button className='text-sm font-medium text-[#3C6EDD]'>
                     Add more
                   </button>
                 </div>
                 {invoices.map((invoice) => (
                   <div
                     key={invoice.id}
-                    className="flex flex-row mx-2 justify-between p-2 border-b
-                    border-slate-700/30 hover:bg-slate-700/20 cursor-pointer
-                    transition-all duration-200 font-family-editorial"
+                    className='font-family-editorial mx-2 flex cursor-pointer flex-row justify-between border-b border-slate-700/30 p-2 transition-all duration-200 hover:bg-slate-700/20'
                   >
-                    <p className="text-white text-sm font-light">
+                    <p className='text-sm font-light text-white'>
                       {invoice.nameFile}
                     </p>
-                    <p className="text-white text-sm font-light">
+                    <p className='text-sm font-light text-white'>
                       {invoice.provider}
                     </p>
-                    <button className="text-[#2A59FF] text-sm font-light mt-1">
-                      <EyeIcon className="w-4 h-4" />
+                    <button className='mt-1 text-sm font-light text-[#2A59FF]'>
+                      <EyeIcon className='h-4 w-4' />
                     </button>
                   </div>
                 ))}
-                <div className="flex flex-row items-start justify-between p-4">
-                  <p className="text-[#3C6EDD]  text-sm font-medium">
+                <div className='flex flex-row items-start justify-between p-4'>
+                  <p className='text-sm font-medium text-[#3C6EDD]'>
                     Linked Accounts
                   </p>
-                  <button className="text-[#3C6EDD] text-sm font-medium">
+                  <button className='text-sm font-medium text-[#3C6EDD]'>
                     Add more
                   </button>
                 </div>
-                <div className="flex flex-row mx-2 justify-between p-2 border-b border-slate-700/30 hover:bg-slate-700/20 cursor-pointer transition-all duration-200">
-                  <div className="flex flex-row items-center ">
-                    <span className="text-white text-sm font-light">
-                    <SiGmail className="w-4 h-4 inline mr-2" />
-                  </span>
-                    <p className=" text-sm font-light text-white font-family-editorial">Gmail</p>
-                  </div>
-                  <p className=" text-sm font-light text-white font-family-editorial">g@vendorconnect.ai</p>
-                </div>
-                <div className="flex flex-row mx-2 justify-between p-2 border-b border-slate-700/30 hover:bg-slate-700/20 cursor-pointer transition-all duration-200">
-
-                  <div className="flex flex-row items-center ">
-                     <span className="text-white text-sm font-light">
-                     <SiDropbox className="w-4 h-4 inline mr-2" />
+                <div className='mx-2 flex cursor-pointer flex-row justify-between border-b border-slate-700/30 p-2 transition-all duration-200 hover:bg-slate-700/20'>
+                  <div className='flex flex-row items-center'>
+                    <span className='text-sm font-light text-white'>
+                      <SiGmail className='mr-2 inline h-4 w-4' />
                     </span>
-                    <p className=" text-sm font-light text-white font-family-editorial">Dropbox</p>
+                    <p className='font-family-editorial text-sm font-light text-white'>
+                      Gmail
+                    </p>
+                  </div>
+                  <p className='font-family-editorial text-sm font-light text-white'>
+                    g@vendorconnect.ai
+                  </p>
+                </div>
+                <div className='mx-2 flex cursor-pointer flex-row justify-between border-b border-slate-700/30 p-2 transition-all duration-200 hover:bg-slate-700/20'>
+                  <div className='flex flex-row items-center'>
+                    <span className='text-sm font-light text-white'>
+                      <SiDropbox className='mr-2 inline h-4 w-4' />
+                    </span>
+                    <p className='font-family-editorial text-sm font-light text-white'>
+                      Dropbox
+                    </p>
                   </div>
 
-                  <p className=" text-sm font-light text-white font-family-editorial">g@vendorconnect.ai</p>
+                  <p className='font-family-editorial text-sm font-light text-white'>
+                    g@vendorconnect.ai
+                  </p>
                 </div>
               </>
             )}
           </div>
         )}
-        {recentViews && (
-          <div className="w-80 bg-slate-800/30 border-r border-slate-700/50 flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700/30">
-              <div>
-                <h3 className="text-[#3C6EDD] font-family-mondwest text-lg font-medium">
-                  Recent View
-                </h3>
-                <p className="text-white text-base font-light mt-1"></p>
-              </div>
-              <div className="flex h-full items-start">
-                <button
-                  onClick={() => {
-                    setFlowStep(3);
-                  }}
-                  className="text-white hover:text-white transition-colors p-1 hover:bg-slate-700/50 rounded"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+
+        {showInformationalNavbar ? <RecentViewSideBar /> : null}
 
         {/* Área principal para chat */}
-        <div className="flex-1 flex flex-col bg-slate-100">{children}</div>
+        <div className='flex h-[90vh] flex-1 flex-col bg-slate-100'>
+          {children}
+        </div>
       </div>
-    </div>
-  );
-};
-
-const SidebarItem = ({ icon, active = false, onClick }) => {
-  return (
-    <div
-      className={`
-        w-12 h-12 rounded-lg flex items-center justify-center cursor-pointer transition-all duration-200
-        ${
-          active
-            ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-            : "text-slate-400 hover:text-white hover:bg-slate-700/30"
-        }
-      `}
-      onClick={onClick}
-    >
-      {icon}
-    </div>
+    </main>
   );
 };
 
