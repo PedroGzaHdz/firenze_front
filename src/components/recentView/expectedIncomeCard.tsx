@@ -16,7 +16,7 @@ export const ExpectedIncomeCard: React.FC<ExpectedIncomeCardProps> = ({
   lastMonth,
 }) => {
   const formatAmount = (amount: number) => {
-    return `${(amount / 1000000).toFixed(1)}M`;
+    return `${(amount / 1000).toFixed(1)}K`;
   };
 
   return (
