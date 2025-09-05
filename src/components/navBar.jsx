@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   CubeIcon,
   PlusIcon,
@@ -6,6 +6,10 @@ import {
   CloudArrowDownIcon,
   Square3Stack3DIcon,
   ArrowUturnUpIcon,
+  UserIcon,
+  Cog6ToothIcon,
+  ArrowRightOnRectangleIcon,
+  CameraIcon,
 } from '@heroicons/react/24/outline';
 import { EyeIcon } from 'lucide-react';
 import { SiGmail, SiDropbox } from 'react-icons/si';
@@ -13,15 +17,21 @@ import Image from 'next/image';
 import Logo from '../assets/logo.png';
 import { useGlobalContext } from '@/context/globalContext';
 import SidebarItem from '@/components/navbar/sidebarItem';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import RecentViewSideBar from '@/components/navbar/recentViewSideBar';
+import { useAuth } from '@workos-inc/authkit-nextjs/components';
+import { handleSignOut } from '@/actions/auth';
 
 const Sidebar = ({ children }) => {
   const router = useRouter();
+  const pathName = usePathname();
   const { flowStep, setFlowStep } = useGlobalContext();
   const [activeItem, setActiveItem] = useState(1);
   const [showInformationalView, setShowInformationalView] = useState(false);
   const [showInformationalNavbar, setShowInformationalNavbar] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const { user } = useAuth();
+  const dropdownRef = useRef(null);
 
   const [invoices] = useState([
     {
@@ -69,6 +79,29 @@ const Sidebar = ({ children }) => {
       setShowInformationalView(false);
     }
   };
+
+  // Cerrar dropdown al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Función para manejar logout (puedes conectar tu lógica aquí)
+  const handleLogout = async () => {
+    console.log('Logout clicked');
+    setShowDropdown(false);
+  };
+  if (pathName === '/login' || pathName === '/signup') {
+    return <>{children}</>;
+  }
   return (
     <main className='flex h-screen flex-col bg-slate-950'>
       {/* Header superior que abarca todo el ancho */}
@@ -94,12 +127,85 @@ const Sidebar = ({ children }) => {
 
         {/* Avatar y elementos del usuario */}
         <div className='flex items-center gap-2'>
-          {/*<div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-semibold text-sm">*/}
-          {/*  ?*/}
-          {/*</div>*/}
-          {/*<div className="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">*/}
-          {/*  G*/}
-          {/*</div>*/}
+          {/* Avatar con dropdown */}
+          <div className='relative' ref={dropdownRef}>
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className='group relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold text-sm transition-all duration-200 hover:from-blue-600 hover:to-purple-700 hover:shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 overflow-hidden'
+            >
+              {user?.profilePictureUrl ? (
+                <img
+                  src={user.profilePictureUrl}
+                  alt='Profile'
+                  className='h-full w-full object-cover'
+                />
+              ) : (
+                <UserIcon className='h-5 w-5 group-hover:scale-110 transition-transform duration-200' />
+              )}
+            </button>
+
+            {/* Dropdown Menu */}
+            {showDropdown && (
+              <div className='absolute right-0 mt-2 w-56 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50'>
+                <div className='py-1'>
+                  {/* Perfil Header */}
+                  <div className='px-4 py-3 border-b border-gray-100'>
+                    <div className='flex items-center gap-3'>
+                      <div className='relative h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-hidden'>
+                        {user?.profilePictureUrl ? (
+                          <img
+                            src={user.profilePictureUrl}
+                            alt='Profile'
+                            className='h-full w-full object-cover'
+                          />
+                        ) : (
+                          <UserIcon className='h-5 w-5 text-white' />
+                        )}
+                      </div>
+                      <div>
+                        <p className='text-sm font-medium text-gray-900'>{user?.firstName + ' ' + user?.lastName}</p>
+                        <p className='text-xs text-gray-500'>{user?.email}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cambiar foto de perfil */}
+                  {/* <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className='w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors'
+                  >
+                    <CameraIcon className='h-4 w-4' />
+                    Cambiar foto de perfil
+                  </button> */}
+
+                  {/* Configuraciones */}
+                  {/* <button
+                    onClick={handleSettings}
+                    className='w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors'
+                  >
+                    <Cog6ToothIcon className='h-4 w-4' />
+                    Configuraciones
+                  </button> */}
+
+                  {/* Separador */}
+                  {/* <div className='border-t border-gray-100 my-1'></div> */}
+
+                  {/* Logout */}
+                  <form action={handleSignOut}>
+
+                    <button
+                      type='submit'
+                      className='w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors'
+                    >
+                      <ArrowRightOnRectangleIcon className='h-4 w-4' />
+                      SignOut
+                    </button>
+                  </form>
+
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 

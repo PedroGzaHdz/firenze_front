@@ -1,15 +1,16 @@
-'use client';
-import { GlobalProvider } from '@/context/globalContext';
-import Sidebar from '@/components/navBar';
+import { Suspense } from 'react';
 import './globals.css';
+
+export const metadata = {
+  title: 'Vendor Dashboard',
+  description: 'Business management dashboard',
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang='en'>
-      <body className={`antialiased`}>
-        <GlobalProvider>
-          <Sidebar>{children}</Sidebar>
-        </GlobalProvider>
+      <body>
+        <Suspense fallback={null}>{children}</Suspense>
       </body>
     </html>
   );
