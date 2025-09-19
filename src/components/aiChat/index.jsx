@@ -202,27 +202,26 @@ const AiChat = ({ documents = [], loadingDocs = false }) => {
     <div className='lg:col-span-2'>
       <Card className='flex h-[600px] flex-col'>
         <CardHeader className='border-b flex flex-row items-center justify-between'>
+          <CardTitle className='text-lg'>Chat with AI Assistant</CardTitle>
           <div className='flex items-center gap-2'>
-            <CardTitle className='text-lg'>Chat with AI Assistant</CardTitle>
             <Button
               variant='ghost'
-              size='icon'
+              size='sm'
               onClick={handleResetChat}
-              title='Reset chat'
-              className='ml-2 text-gray-500 hover:text-blue-600'
+              className='text-gray-500 hover:text-blue-600 flex items-center gap-1.5'
             >
-              <RotateCcw className='h-5 w-5' />
+              <RotateCcw className='h-4 w-4' />
+              Start New Chat
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => setShowDocs((v) => !v)}
+              disabled={loadingDocs}
+            >
+              {showDocs ? 'Hide Documents' : 'Select Document'}
             </Button>
           </div>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => setShowDocs((v) => !v)}
-            className='ml-2'
-            disabled={loadingDocs}
-          >
-            {showDocs ? 'Hide Documents' : 'Select Document'}
-          </Button>
         </CardHeader>
         <CardContent className='flex flex-1 flex-col min-h-0 p-0'>
           {/* Document Selector */}
@@ -326,19 +325,25 @@ const AiChat = ({ documents = [], loadingDocs = false }) => {
               </Button>
             </div>
             {/* Quick Suggestions */}
-            <div className='mt-3 flex flex-wrap gap-2'>
-              {suggestions.map((suggestion, index) => (
-                <Button
-                  key={index}
-                  variant='outline'
-                  size='sm'
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  className='text-xs'
-                >
-                  {suggestion}
-                </Button>
-              ))}
-            </div>
+            {
+              chatHistory?.find((msg) => msg.type === 'user')  ?
+                null
+                : (
+                <div className='mt-3 flex flex-wrap gap-2'>
+                  {suggestions.map((suggestion, index) => (
+                    <Button
+                      key={index}
+                      variant='outline'
+                      size='sm'
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className='text-xs'
+                    >
+                      {suggestion}
+                    </Button>
+                  ))}
+                </div>
+              )
+            }
             {selectedDoc && (
               <div className='mt-2 text-xs text-blue-900 bg-blue-50 rounded px-2 py-1'>
                 <span className='font-semibold'>Selected Document:</span> {selectedDoc.name} <span className='text-gray-500'>({selectedDoc.type})</span>

@@ -242,12 +242,12 @@ export default function DocumentsPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Approved':
-        return 'bg-green-100 text-green-800';
-      case 'Review':
-        return 'bg-red-100 text-red-800';
-      case 'Pending':
-        return 'bg-yellow-100 text-yellow-800';
+      case 'accepted':
+        return 'bg-green-50 border-green-300 text-green-800';
+      case 'rejected':
+        return 'bg-red-50 border-red-300 text-red-800';
+      case 'pending':
+        return 'bg-amber-50 border-amber-300 text-amber-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -268,8 +268,6 @@ export default function DocumentsPage() {
 
   return (
     <div className='space-y-6 p-6'>
-      {/* Banner superior menos invasivo para pendientes */}
-      {/* Mostrar banner solo cuando los datos estén listos y hay documentos */}
       {!loadingDocs && documents.length > 0 && pendingDocs > 0 && (
         <div className='mb-4 flex w-full items-center gap-2 rounded border border-yellow-200 bg-yellow-50 px-4 py-2 text-yellow-800'>
           <AlertCircle className='h-5 w-5 text-yellow-500' />
@@ -278,7 +276,6 @@ export default function DocumentsPage() {
           </span>
         </div>
       )}
-      {/* Notification */}
       {notification && (
         <div
           className={`fixed top-4 right-4 z-50 max-w-sm rounded-lg p-4 shadow-lg transition-all duration-300 ${
@@ -320,7 +317,6 @@ export default function DocumentsPage() {
         </div>
       )}
 
-      {/* Header */}
       <div className='flex items-center justify-between'>
         <div>
           <h1 className='text-3xl font-semibold text-gray-900'>Documents</h1>
@@ -358,7 +354,7 @@ export default function DocumentsPage() {
       </Card>
 
       {/* Upload Section */}
-      <Card>
+      <Card className={'border-none p-0'}>
         <CardContent className='p-0'>
           <div
             className={`relative border-2 border-dashed p-8 transition-all duration-200 ${
@@ -394,7 +390,7 @@ export default function DocumentsPage() {
                   : 'Drag & drop files here or click to browse'}
               </p>
               <Button
-                className='bg-blue-600 hover:bg-blue-700'
+                className='bg-blue-600 hover:bg-blue-700 text-white'
                 disabled={uploading}
               >
                 {uploading ? 'Uploading...' : 'Choose Files'}
@@ -402,10 +398,9 @@ export default function DocumentsPage() {
               <input
                 id='file-upload'
                 type='file'
-                multiple
                 className='hidden'
                 onChange={handleFileSelect}
-                accept='.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg'
+                accept='.pdf,.xlsx'
                 disabled={uploading}
               />
               {uploading && (
@@ -568,24 +563,37 @@ export default function DocumentsPage() {
                       {doc.amount}
                     </td>
                     <td className='p-4'>
-                      <Badge className={getStatusColor(doc.status)}>
-                        <Select
-                          value={(doc.status || '').toLowerCase()}
-                          onValueChange={(value) =>
-                            handleStatusChange(doc, value)
-                          }
-                          disabled={deletingDocId === doc.id || uploading}
-                        >
-                          <SelectTrigger className='h-7 w-28 text-xs'>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className='bg-white'>
-                            <SelectItem value='pending'>Pending</SelectItem>
-                            <SelectItem value='accepted'>Accepted</SelectItem>
-                            <SelectItem value='rejected'>Rejected</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </Badge>
+                      <Select
+                        value={(doc.status || '').toLowerCase()}
+                        onValueChange={(value) =>
+                          handleStatusChange(doc, value)
+                        }
+                        disabled={deletingDocId === doc.id || uploading}
+                      >
+                        <SelectTrigger className={`h-7 w-28 text-xs ${getStatusColor(doc.status)}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className='bg-white'>
+                          <SelectItem
+                            className='text-amber-800 data-[highlighted]:bg-amber-100'
+                            value='pending'
+                          >
+                            Pending
+                          </SelectItem>
+                          <SelectItem
+                            className='text-green-800 data-[highlighted]:bg-green-100'
+                            value='accepted'
+                          >
+                            Accepted
+                          </SelectItem>
+                          <SelectItem
+                            className='text-red-800 data-[highlighted]:bg-red-100'
+                            value='rejected'
+                          >
+                            Rejected
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </td>
                     <td className='p-4 text-gray-600'>{doc.uploadDate}</td>
                     <td className='p-4'>

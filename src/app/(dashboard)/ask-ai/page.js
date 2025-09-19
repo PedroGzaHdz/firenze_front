@@ -68,6 +68,7 @@ export default function AskAIPage() {
             ? `${(doc.confidenceScore * 100).toFixed(1)}%`
             : '-',
           lineItems: Array.isArray(doc.lineItems) ? doc.lineItems : [],
+          rawData: doc?.rawData || {},
         }));
       } else {
         throw new Error(res.error || 'Error loading documents');
