@@ -34,7 +34,6 @@ export default function HomePage() {
     }
   }, [flowStep]);
 
-  console.log(vendors);
 
   return (
     <div className='h-[90vh]'>

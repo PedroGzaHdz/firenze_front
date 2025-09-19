@@ -96,7 +96,6 @@ const Sidebar = ({ children }) => {
 
   // Función para manejar logout (puedes conectar tu lógica aquí)
   const handleLogout = async () => {
-    console.log('Logout clicked');
     setShowDropdown(false);
   };
   if (pathName === '/login' || pathName === '/signup') {

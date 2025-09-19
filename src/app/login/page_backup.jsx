@@ -20,7 +20,6 @@ export default function LoginPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Aquí iría la lógica de autenticación
-    console.log('Login attempt:', formData);
   };
 
   return (

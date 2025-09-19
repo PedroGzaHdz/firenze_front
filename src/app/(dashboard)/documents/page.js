@@ -1,6 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  getDocumentsSupabase,
+  logicDeleteDocumentSupabase,
+  updateStatusDocumentSupabase,
+} from '@/actions/documentsActions';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,64 +32,67 @@ import {
 } from 'lucide-react';
 import AIAssistantTrigger from '@/components/aiChat/ai-assistant-trigger';
 
-const initialDocuments = [
-  {
-    id: 1,
-    name: 'Invoice_INV-2024-001.pdf',
-    vendor: 'ACME Foods',
-    type: 'Invoice',
-    amount: '$12,340.00',
-    status: 'Review',
-    uploadDate: '1/14/2024',
-    size: '2.3 MB',
-  },
-  {
-    id: 2,
-    name: 'PO_456_Inventory.pdf',
-    vendor: 'Supply Chain Co',
-    type: 'PO',
-    amount: '$50,000.00',
-    status: 'Pending',
-    uploadDate: '1/13/2024',
-    size: '1.8 MB',
-  },
-  {
-    id: 3,
-    name: 'Contract_Distribution.pdf',
-    vendor: 'Retail Giant',
-    type: 'Contract',
-    amount: '-',
-    status: 'Approved',
-    uploadDate: '1/12/2024',
-    size: '5.2 MB',
-  },
-];
-
 export default function DocumentsPage() {
-  const [documents, setDocuments] = useState(initialDocuments);
+  // React Query para documentos
+  const {
+    data: documentsData,
+    isLoading: loadingDocs,
+    isError: errorDocs,
+    refetch: refetchDocs,
+  } = useQuery({
+    queryKey: ['documents'],
+    queryFn: async () => {
+      const res = await getDocumentsSupabase();
+      if (res.success && Array.isArray(res.data)) {
+        return res.data.map((doc) => ({
+          id: doc.id,
+          name: doc.name || doc.filename || 'Document',
+          vendor: doc.vendor || '-',
+          type: doc.cogsCategory || '-',
+          amount: doc.total || '-',
+          status: doc.status || 'Review',
+          uploadDate: doc.created_at
+            ? new Date(doc.created_at).toLocaleDateString()
+            : '-',
+          url: doc.url || '#',
+          size: doc.size ? `${(doc.size / (1024 * 1024)).toFixed(1)} MB` : '-',
+        }));
+      } else {
+        throw new Error(res.error || 'Error loading documents');
+      }
+    },
+  });
+  const documents = documentsData || [];
+  const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [typeFilter, setTypeFilter] = useState('All Types');
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedDocs, setSelectedDocs] = useState([]);
   const [notification, setNotification] = useState(null);
+  const [deletingDocId, setDeletingDocId] = useState(null);
 
-  // Simular notificación después de cargar
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const pendingCount = documents.filter(
-        (doc) => doc.status === 'Review' || doc.status === 'Pending',
-      ).length;
-      if (pendingCount > 0) {
-        setNotification({
-          type: 'warning',
-          message: `${pendingCount} documents require your attention`,
-        });
-      }
-    }, 2000);
+  // Eliminado: useEffect de consulta inicial, migrará a React Query
 
-    return () => clearTimeout(timer);
-  }, [documents]);
+  // Totales dinámicos para status cards (status en minúsculas)
+  const pendingDocs = useMemo(
+    () =>
+      documents.filter((doc) => (doc.status || '').toLowerCase() === 'pending')
+        .length,
+    [documents],
+  );
+  const rejectDocs = useMemo(
+    () =>
+      documents.filter((doc) => (doc.status || '').toLowerCase() === 'rejected')
+        .length,
+    [documents],
+  );
+  const approvedDocs = useMemo(
+    () =>
+      documents.filter((doc) => (doc.status || '').toLowerCase() === 'accepted')
+        .length,
+    [documents],
+  );
 
   // Auto-hide notification after 5 seconds
   useEffect(() => {
@@ -95,11 +104,13 @@ export default function DocumentsPage() {
 
   const filteredDocuments = documents.filter((doc) => {
     const matchesSearch =
-      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.vendor.toLowerCase().includes(searchTerm.toLowerCase());
+      (doc.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (doc.vendor || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
-      statusFilter === 'All Status' || doc.status === statusFilter;
-    const matchesType = typeFilter === 'All Types' || doc.type === typeFilter;
+      statusFilter === 'All Status' ||
+      (doc.status || '').toLowerCase() === statusFilter.toLowerCase();
+    const docType = doc.cogsCategory || doc.type || '';
+    const matchesType = typeFilter === 'All Types' || docType === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
   });
 
@@ -111,32 +122,36 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const files = Array.from(e.target.files);
-    files.forEach((file, index) => {
-      setTimeout(() => {
-        const newDoc = {
-          id: Date.now() + index,
-          name: file.name,
-          vendor: 'Auto-detected',
-          type: file.name.toLowerCase().includes('invoice')
-            ? 'Invoice'
-            : file.name.toLowerCase().includes('po')
-              ? 'PO'
-              : 'Contract',
-          amount: '-',
-          status: 'Review',
-          uploadDate: new Date().toLocaleDateString(),
-          size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-        };
-
-        setDocuments((prev) => [newDoc, ...prev]);
+    setUploading(true);
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const res = await fetch('/api/upload-document', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!res.ok) throw new Error('Upload failed');
         setNotification({
           type: 'success',
           message: `${file.name} uploaded successfully`,
         });
-      }, index * 200);
-    });
+        // Refrescar documentos después de subir
+        const docsRes = await getDocumentsSupabase();
+        if (docsRes.success) {
+          refetchDocs();
+        }
+      } catch (err) {
+        setNotification({
+          type: 'warning',
+          message: `Error uploading ${file.name}: ${err.message || err}`,
+        });
+      }
+    }
+    setUploading(false);
     e.target.value = null; // Reset file input
   };
 
@@ -150,67 +165,78 @@ export default function DocumentsPage() {
     setIsDragOver(false);
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     setIsDragOver(false);
-
     const files = Array.from(e.dataTransfer.files);
-    files.forEach((file, index) => {
-      setTimeout(() => {
-        const newDoc = {
-          id: Date.now() + index,
-          name: file.name,
-          vendor: 'Auto-detected',
-          type: file.name.toLowerCase().includes('invoice')
-            ? 'Invoice'
-            : file.name.toLowerCase().includes('po')
-              ? 'PO'
-              : 'Contract',
-          amount: '-',
-          status: 'Review',
-          uploadDate: new Date().toLocaleDateString(),
-          size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-        };
-
-        setDocuments((prev) => [newDoc, ...prev]);
+    setUploading(true);
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const res = await fetch('/api/upload-document', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!res.ok) throw new Error('Upload failed');
         setNotification({
           type: 'success',
           message: `${file.name} uploaded successfully`,
         });
-      }, index * 200);
-    });
+        // Refrescar documentos después de subir
+        const docsRes = await getDocumentsSupabase();
+        if (docsRes.success) {
+          await refetchDocs();
+        }
+      } catch (err) {
+        setNotification({
+          type: 'warning',
+          message: `Error uploading ${file.name}: ${err.message || err}`,
+        });
+      }
+    }
+    setUploading(false);
   };
 
-  const handleDocumentAction = (action, doc) => {
-    switch (action) {
-      case 'approve':
-        setDocuments((prev) =>
-          prev.map((d) => (d.id === doc.id ? { ...d, status: 'Approved' } : d)),
-        );
+  const handleDeleteDocument = async (docID) => {
+    setDeletingDocId(docID);
+    try {
+      const responseDelete = await logicDeleteDocumentSupabase(docID);
+      if (responseDelete.success) {
         setNotification({
           type: 'success',
-          message: `${doc.name} approved successfully`,
+          message: 'Document deleted successfully',
         });
-        break;
-      case 'delete':
-        setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-        setNotification({
-          type: 'info',
-          message: `${doc.name} deleted`,
-        });
-        break;
-      case 'download':
-        setNotification({
-          type: 'info',
-          message: `Downloading ${doc.name}...`,
-        });
-        break;
-      case 'view':
-        setNotification({
-          type: 'info',
-          message: `Opening ${doc.name}...`,
-        });
-        break;
+        await refetchDocs();
+      } else {
+        throw new Error(responseDelete.error || 'Error deleting document');
+      }
+    } catch (err) {
+      setNotification({
+        type: 'warning',
+        message: `Error deleting document: ${err.message || err}`,
+      });
+    }
+    setDeletingDocId(null);
+  };
+
+  const handleStatusChange = async (doc, newStatus) => {
+    const prevStatus = doc.status;
+    setNotification({ type: 'info', message: 'Updating status...' });
+    try {
+      const res = await updateStatusDocumentSupabase(doc.id, newStatus);
+      if (res.success) {
+        setNotification({ type: 'success', message: 'Status updated!' });
+        await refetchDocs();
+      } else {
+        throw new Error(res.error || 'Error updating status');
+      }
+    } catch (err) {
+      setNotification({
+        type: 'warning',
+        message: `Error updating status: ${err.message || err}`,
+      });
     }
   };
 
@@ -242,6 +268,16 @@ export default function DocumentsPage() {
 
   return (
     <div className='space-y-6 p-6'>
+      {/* Banner superior menos invasivo para pendientes */}
+      {/* Mostrar banner solo cuando los datos estén listos y hay documentos */}
+      {!loadingDocs && documents.length > 0 && pendingDocs > 0 && (
+        <div className='mb-4 flex w-full items-center gap-2 rounded border border-yellow-200 bg-yellow-50 px-4 py-2 text-yellow-800'>
+          <AlertCircle className='h-5 w-5 text-yellow-500' />
+          <span className='text-sm font-medium'>
+            {pendingDocs} documents require your attention
+          </span>
+        </div>
+      )}
       {/* Notification */}
       {notification && (
         <div
@@ -333,7 +369,9 @@ export default function DocumentsPage() {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            onClick={() => document.getElementById('file-upload').click()}
+            onClick={() =>
+              !uploading && document.getElementById('file-upload').click()
+            }
           >
             <div className='cursor-pointer text-center'>
               <div
@@ -355,8 +393,11 @@ export default function DocumentsPage() {
                   ? 'Release to upload files'
                   : 'Drag & drop files here or click to browse'}
               </p>
-              <Button className='bg-blue-600 hover:bg-blue-700'>
-                Choose Files
+              <Button
+                className='bg-blue-600 hover:bg-blue-700'
+                disabled={uploading}
+              >
+                {uploading ? 'Uploading...' : 'Choose Files'}
               </Button>
               <input
                 id='file-upload'
@@ -365,7 +406,35 @@ export default function DocumentsPage() {
                 className='hidden'
                 onChange={handleFileSelect}
                 accept='.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg'
+                disabled={uploading}
               />
+              {uploading && (
+                <div className='bg-opacity-70 absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white'>
+                  <svg
+                    className='h-8 w-8 animate-spin text-blue-600'
+                    xmlns='http://www.w3.org/2000/svg'
+                    fill='none'
+                    viewBox='0 0 24 24'
+                  >
+                    <circle
+                      className='opacity-25'
+                      cx='12'
+                      cy='12'
+                      r='10'
+                      stroke='currentColor'
+                      strokeWidth='4'
+                    ></circle>
+                    <path
+                      className='opacity-75'
+                      fill='currentColor'
+                      d='M4 12a8 8 0 018-8v8z'
+                    ></path>
+                  </svg>
+                  <span className='ml-3 font-medium text-blue-700'>
+                    Uploading and processing...
+                  </span>
+                </div>
+              )}
             </div>
             {isDragOver && (
               <div className='bg-opacity-50 absolute inset-0 rounded-lg bg-blue-50'></div>
@@ -374,33 +443,41 @@ export default function DocumentsPage() {
         </CardContent>
       </Card>
 
-      {/* Status Cards */}
-      <div className='grid grid-cols-3 gap-6'>
-        <Card className='border-l-4 border-l-yellow-400'>
-          <CardContent className='p-6'>
-            <div className='text-center'>
-              <div className='mb-1 text-3xl font-bold text-yellow-600'>2</div>
-              <div className='text-sm text-gray-600'>Pending</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className='border-l-4 border-l-red-400'>
-          <CardContent className='p-6'>
-            <div className='text-center'>
-              <div className='mb-1 text-3xl font-bold text-red-600'>3</div>
-              <div className='text-sm text-gray-600'>Review</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className='border-l-4 border-l-green-400'>
-          <CardContent className='p-6'>
-            <div className='text-center'>
-              <div className='mb-1 text-3xl font-bold text-green-600'>3</div>
-              <div className='text-sm text-gray-600'>Approved</div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Status Cards dinámicos solo cuando los datos estén listos */}
+      {!loadingDocs && (
+        <div className='grid grid-cols-3 gap-6'>
+          <Card className='border-l-4 border-l-yellow-400'>
+            <CardContent className='p-6'>
+              <div className='text-center'>
+                <div className='mb-1 text-3xl font-bold text-yellow-600'>
+                  {pendingDocs || 0}
+                </div>
+                <div className='text-sm text-gray-600'>Pending</div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className='border-l-4 border-l-red-400'>
+            <CardContent className='p-6'>
+              <div className='text-center'>
+                <div className='mb-1 text-3xl font-bold text-red-600'>
+                  {rejectDocs || 0}
+                </div>
+                <div className='text-sm text-gray-600'>Rejected</div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className='border-l-4 border-l-green-400'>
+            <CardContent className='p-6'>
+              <div className='text-center'>
+                <div className='mb-1 text-3xl font-bold text-green-600'>
+                  {approvedDocs || 0}
+                </div>
+                <div className='text-sm text-gray-600'>Accepted</div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Filters */}
       <div className='flex items-center gap-4'>
@@ -431,8 +508,8 @@ export default function DocumentsPage() {
           <SelectContent className='bg-white'>
             <SelectItem value='All Status'>All Status</SelectItem>
             <SelectItem value='Pending'>Pending</SelectItem>
-            <SelectItem value='Review'>Review</SelectItem>
-            <SelectItem value='Approved'>Approved</SelectItem>
+            <SelectItem value='rejected'>Rejected</SelectItem>
+            <SelectItem value='accepted'>Accepted</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -445,18 +522,7 @@ export default function DocumentsPage() {
               <thead className='border-b bg-gray-50'>
                 <tr>
                   <th className='p-4 text-left font-medium text-gray-900'>
-                    <div className='flex items-center gap-3'>
-                      <input
-                        type='checkbox'
-                        checked={
-                          selectedDocs.length === filteredDocuments.length &&
-                          filteredDocuments.length > 0
-                        }
-                        onChange={toggleSelectAll}
-                        className='rounded border-gray-300'
-                      />
-                      Document Name
-                    </div>
+                    <div className='flex items-center gap-3'>Document Name</div>
                   </th>
                   <th className='p-4 text-left font-medium text-gray-900'>
                     Vendor
@@ -486,12 +552,6 @@ export default function DocumentsPage() {
                   >
                     <td className='p-4'>
                       <div className='flex items-center gap-3'>
-                        <input
-                          type='checkbox'
-                          checked={selectedDocs.includes(doc.id)}
-                          onChange={() => toggleDocSelection(doc.id)}
-                          className='rounded border-gray-300'
-                        />
                         <FileText className='h-4 w-4 text-gray-400' />
                         <span className='font-medium text-gray-900'>
                           {doc.name}
@@ -509,7 +569,22 @@ export default function DocumentsPage() {
                     </td>
                     <td className='p-4'>
                       <Badge className={getStatusColor(doc.status)}>
-                        {doc.status}
+                        <Select
+                          value={(doc.status || '').toLowerCase()}
+                          onValueChange={(value) =>
+                            handleStatusChange(doc, value)
+                          }
+                          disabled={deletingDocId === doc.id || uploading}
+                        >
+                          <SelectTrigger className='h-7 w-28 text-xs'>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className='bg-white'>
+                            <SelectItem value='pending'>Pending</SelectItem>
+                            <SelectItem value='accepted'>Accepted</SelectItem>
+                            <SelectItem value='rejected'>Rejected</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </Badge>
                     </td>
                     <td className='p-4 text-gray-600'>{doc.uploadDate}</td>
@@ -518,7 +593,24 @@ export default function DocumentsPage() {
                         <Button
                           variant='ghost'
                           size='sm'
-                          onClick={() => handleDocumentAction('download', doc)}
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(doc.url);
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = doc.name || 'document.pdf';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+
+                              window.URL.revokeObjectURL(url); // liberar memoria
+                            } catch (error) {
+                              // Error al descargar el archivo
+                            }
+                          }}
                           className='hover:bg-gray-100'
                         >
                           <Download className='h-4 w-4' />
@@ -526,7 +618,9 @@ export default function DocumentsPage() {
                         <Button
                           variant='ghost'
                           size='sm'
-                          onClick={() => handleDocumentAction('view', doc)}
+                          onClick={() => {
+                            window.open(doc.url, '_blank');
+                          }}
                           className='hover:bg-gray-100'
                         >
                           <Eye className='h-4 w-4' />
@@ -534,18 +628,34 @@ export default function DocumentsPage() {
                         <Button
                           variant='ghost'
                           size='sm'
-                          onClick={() => handleDocumentAction('edit', doc)}
-                          className='hover:bg-gray-100'
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          className={`hover:bg-red-100 hover:text-red-600 ${deletingDocId === doc.id ? 'pointer-events-none opacity-50' : ''}`}
+                          disabled={deletingDocId === doc.id}
                         >
-                          <Edit className='h-4 w-4' />
-                        </Button>
-                        <Button
-                          variant='ghost'
-                          size='sm'
-                          onClick={() => handleDocumentAction('delete', doc)}
-                          className='hover:bg-red-100 hover:text-red-600'
-                        >
-                          <Trash2 className='h-4 w-4' />
+                          {deletingDocId === doc.id ? (
+                            <svg
+                              className='h-4 w-4 animate-spin text-red-600'
+                              xmlns='http://www.w3.org/2000/svg'
+                              fill='none'
+                              viewBox='0 0 24 24'
+                            >
+                              <circle
+                                className='opacity-25'
+                                cx='12'
+                                cy='12'
+                                r='10'
+                                stroke='currentColor'
+                                strokeWidth='4'
+                              ></circle>
+                              <path
+                                className='opacity-75'
+                                fill='currentColor'
+                                d='M4 12a8 8 0 018-8v8z'
+                              ></path>
+                            </svg>
+                          ) : (
+                            <Trash2 className='h-4 w-4' />
+                          )}
                         </Button>
                       </div>
                     </td>

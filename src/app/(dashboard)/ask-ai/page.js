@@ -1,23 +1,17 @@
 'use client';
-
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import {
+  getDocuementsAcceptedSupabase,
+} from '@/actions/documentsActions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   MessageCircle,
-  Send,
   Lightbulb,
   TrendingUp,
   AlertTriangle,
 } from 'lucide-react';
+import AiChat from '@/components/aiChat';
 
-const suggestions = [
-  'Why did this margin drop?',
-  'Suggest alternatives',
-  "What's the inventory status?",
-  'Analyze sales trends',
-];
 
 const insights = [
   {
@@ -47,48 +41,41 @@ const insights = [
 ];
 
 export default function AskAIPage() {
-  const [message, setMessage] = useState('');
-  const [chatHistory, setChatHistory] = useState([
-    {
-      type: 'ai',
-      message:
-        "Hello, I'm your SKU Margin Assistant. How can I help you today?",
-      timestamp: new Date(),
+  // Obtener documentos con React Query (igual que en Documents)
+  const {
+    data: documentsData,
+    isLoading: loadingDocs,
+    isError: errorDocs,
+    refetch: refetchDocs,
+  } = useQuery({
+    queryKey: ['documents'],
+    queryFn: async () => {
+      const res = await getDocuementsAcceptedSupabase();
+      if (res.success && Array.isArray(res.data)) {
+        return res.data.map((doc) => ({
+          id: doc.id,
+          name: doc.name || doc.filename || 'Document',
+          vendor: doc.vendor || '-',
+          type: doc.cogsCategory || '-',
+          amount: doc.total || '-',
+          status: doc.status || 'Review',
+          uploadDate: doc.created_at
+            ? new Date(doc.created_at).toLocaleDateString()
+            : '-',
+          url: doc.url || '#',
+          size: doc.size ? `${(doc.size / (1024 * 1024)).toFixed(1)} MB` : '-',
+          confidenceScore: doc.confidenceScore
+            ? `${(doc.confidenceScore * 100).toFixed(1)}%`
+            : '-',
+          lineItems: Array.isArray(doc.lineItems) ? doc.lineItems : [],
+        }));
+      } else {
+        throw new Error(res.error || 'Error loading documents');
+      }
     },
-  ]);
+  });
+  const documents = documentsData || [];
 
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
-
-    // Add user message
-    setChatHistory((prev) => [
-      ...prev,
-      {
-        type: 'user',
-        message: message,
-        timestamp: new Date(),
-      },
-    ]);
-
-    // Simulate AI response
-    setTimeout(() => {
-      setChatHistory((prev) => [
-        ...prev,
-        {
-          type: 'ai',
-          message:
-            "I understand you're asking about that. Let me analyze your data and provide insights based on your current inventory and sales patterns.",
-          timestamp: new Date(),
-        },
-      ]);
-    }, 1000);
-
-    setMessage('');
-  };
-
-  const handleSuggestionClick = (suggestion) => {
-    setMessage(suggestion);
-  };
 
   return (
     <div className='space-y-6 p-6'>
@@ -105,71 +92,7 @@ export default function AskAIPage() {
 
       <div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
         {/* Chat Interface */}
-        <div className='lg:col-span-2'>
-          <Card className='flex h-[600px] flex-col'>
-            <CardHeader className='border-b'>
-              <CardTitle className='text-lg'>Chat with AI Assistant</CardTitle>
-            </CardHeader>
-            <CardContent className='flex flex-1 flex-col p-0'>
-              {/* Chat Messages */}
-              <div className='flex-1 space-y-4 overflow-y-auto p-4'>
-                {chatHistory.map((chat, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${chat.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
-                        chat.type === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
-                      }`}
-                    >
-                      <p className='text-sm'>{chat.message}</p>
-                      <p className='mt-1 text-xs opacity-70'>
-                        {chat.timestamp.toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Message Input */}
-              <div className='border-t p-4'>
-                <div className='flex gap-2'>
-                  <Input
-                    placeholder='Ask a question about your margins...'
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    className='flex-1'
-                  />
-                  <Button
-                    onClick={handleSendMessage}
-                    className='bg-blue-600 hover:bg-blue-700'
-                  >
-                    <Send className='h-4 w-4' />
-                  </Button>
-                </div>
-
-                {/* Quick Suggestions */}
-                <div className='mt-3 flex flex-wrap gap-2'>
-                  {suggestions.map((suggestion, index) => (
-                    <Button
-                      key={index}
-                      variant='outline'
-                      size='sm'
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className='text-xs'
-                    >
-                      {suggestion}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <AiChat documents={documents} loadingDocs={loadingDocs} />
 
         {/* Insights Panel */}
         <div className='space-y-4'>
