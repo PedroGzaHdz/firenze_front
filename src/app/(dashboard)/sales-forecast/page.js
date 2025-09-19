@@ -1,7 +1,5 @@
 'use client';
-
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from 'react';
 import {
   Select,
   SelectContent,
@@ -169,37 +167,6 @@ export default function SalesForecastPage() {
 
     updateData();
   }, [selectedSKU, selectedChannel, forecastAdjustment, weekRange]);
-
-  const handleSimulation = () => {
-    setIsSimulating(true);
-
-    // Simular cambios en el forecast durante 5 segundos
-    const interval = setInterval(() => {
-      setChartData((prev) =>
-        prev.map((item) => {
-          if (item.forecast) {
-            const variation = (Math.random() - 0.5) * 200;
-            return {
-              ...item,
-              forecast: Math.max(1000, Math.round(item.forecast + variation)),
-            };
-          }
-          return item;
-        }),
-      );
-    }, 1000);
-
-    setTimeout(() => {
-      setIsSimulating(false);
-      clearInterval(interval);
-    }, 5000);
-  };
-
-  const resetForecast = () => {
-    setForecastAdjustment([0]);
-    setChartData(baseChartData);
-    setSalesData(baseSalesData);
-  };
 
   const getDaysOfCover = () => {
     const currentStock =
@@ -468,8 +435,11 @@ export default function SalesForecastPage() {
           <table className='w-full'>
             <thead>
               <tr className='border-b border-gray-200'>
-                <th className='px-4 py-3 text-left font-medium text-gray-700'>
+                <th className='w-32 px-4 py-3 text-left font-medium text-gray-700'>
                   SKU / Week
+                </th>
+                <th className='w-20 px-4 py-3 text-center font-medium text-gray-700'>
+                  Type
                 </th>
                 <th className='px-4 py-3 text-center font-medium text-gray-700'>
                   <div>W33</div>
@@ -491,72 +461,86 @@ export default function SalesForecastPage() {
             </thead>
             <tbody>
               {salesData.map((row, index) => (
-                <tr
-                  key={index}
-                  className='cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-50'
-                >
-                  <td className='px-4 py-4 font-medium text-gray-900'>
-                    <div className='flex items-center gap-2'>
-                      {row.sku}
-                      {selectedSKU ===
-                        row.sku.toLowerCase().replace(' ', '-') && (
-                        <div className='h-2 w-2 rounded-full bg-blue-500' />
-                      )}
-                    </div>
-                  </td>
-                  <td className='px-4 py-4 text-center'>
-                    <div className='font-semibold text-gray-900'>
-                      {row.w33.actual}
-                    </div>
-                    <div className='text-xs text-red-500'>{row.w33.left}</div>
-                  </td>
-                  <td className='px-4 py-4 text-center'>
-                    <div className='font-semibold text-gray-900'>
-                      {row.w34.actual}
-                    </div>
-                    <div className='text-xs text-red-500'>{row.w34.left}</div>
-                  </td>
-                  <td className='px-4 py-4 text-center'>
-                    <div className='font-semibold text-gray-900'>
-                      {row.w35.actual}
-                    </div>
-                    <div className='text-xs text-red-500'>{row.w35.left}</div>
-                  </td>
-                  <td className='px-4 py-4 text-center'>
-                    <div
-                      className={`font-semibold ${
-                        forecastAdjustment[0] !== 0
-                          ? 'text-orange-600'
-                          : 'text-gray-900'
-                      }`}
+                <React.Fragment key={index}>
+                  {/* Fila del Plan */}
+                  <tr className='hover:bg-gray-25 cursor-pointer border-b border-gray-100 transition-colors'>
+                    <td
+                      rowSpan='2'
+                      className='w-40 border-r border-gray-200 px-4 py-4 align-middle font-medium text-gray-900'
                     >
-                      {row.w36.forecast}
-                      {forecastAdjustment[0] !== 0 && (
-                        <TrendingUp className='ml-1 inline h-3 w-3' />
-                      )}
-                    </div>
-                    <div className='text-xs text-red-500'>{row.w36.left}</div>
-                  </td>
-                </tr>
+                      <div className='flex items-center gap-2'>
+                        {row.sku}
+                        {selectedSKU ===
+                          row.sku.toLowerCase().replace(' ', '-') && (
+                          <div className='h-2 w-2 rounded-full bg-blue-500' />
+                        )}
+                      </div>
+                    </td>
+                    <td className='w-20 px-4 py-2 text-center'>
+                      <span className='rounded-lg bg-blue-50 px-4 py-1 text-sm font-medium text-blue-600'>
+                        Actual
+                      </span>
+                    </td>
+                    <td className='px-4 py-2 text-center'>
+                      <div className='font-semibold text-gray-900'>
+                        {row.w33.plan || row.w33.actual}
+                      </div>
+                    </td>
+                    <td className='px-4 py-2 text-center'>
+                      <div className='font-semibold text-gray-900'>
+                        {row.w34.plan || row.w34.actual}
+                      </div>
+                    </td>
+                    <td className='px-4 py-2 text-center'>
+                      <div className='font-semibold text-gray-900'>
+                        {row.w35.plan || row.w35.actual}
+                      </div>
+                    </td>
+                    <td className='px-4 py-2 text-center'>
+                      <div className='font-semibold text-gray-900'>
+                        {row.w36.planForecast || row.w36.forecast}
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr className='cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-50'>
+                    <td className='px-4 py-2 text-center'>
+                      <span className='rounded-lg bg-orange-50 px-4 py-1 text-sm font-medium text-orange-600'>
+                        Plan
+                      </span>
+                    </td>
+                    <td className='px-4 py-2 text-center'>
+                      <div className='font-semibold text-gray-900'>
+                        {Math.round(row.w33.actual * 1.2)}
+                      </div>
+                    </td>
+                    <td className='px-4 py-2 text-center'>
+                      <div className='font-semibold text-gray-900'>
+                        {Math.round(row.w34.actual * 1.2)}
+                      </div>
+                    </td>
+                    <td className='px-4 py-2 text-center'>
+                      <div className='font-semibold text-gray-900'>
+                        {Math.round(row.w35.actual * 1.2)}
+                      </div>
+                    </td>
+                    <td className='px-4 py-2 text-center'>
+                      <div className='font-semibold text-gray-900'>
+                        {Math.round(+row.w36.forecast * 1.2)}
+                      </div>
+                    </td>
+                  </tr>
+                </React.Fragment>
               ))}
-              <tr className='border-b border-gray-200 bg-gray-50'>
-                <td className='px-4 py-4 font-semibold text-gray-900'>Total</td>
-                <td className='px-4 py-4 text-center font-semibold text-gray-900'>
-                  {salesData.reduce((sum, row) => sum + row.w33.actual, 0)}
-                </td>
-                <td className='px-4 py-4 text-center font-semibold text-gray-900'>
-                  {salesData.reduce((sum, row) => sum + row.w34.actual, 0)}
-                </td>
-                <td className='px-4 py-4 text-center font-semibold text-gray-900'>
-                  {salesData.reduce((sum, row) => sum + row.w35.actual, 0)}
-                </td>
-                <td className='px-4 py-4 text-center font-semibold text-gray-900'>
-                  {salesData.reduce((sum, row) => sum + row.w36.forecast, 0)}
-                </td>
-              </tr>
+              {/* Fila del Balance de Productos Terminados */}
               <tr className='bg-gray-50'>
                 <td className='px-4 py-4 font-semibold text-blue-600'>
                   Finished Goods Balance
+                </td>
+                <td className='px-4 py-4 text-center'>
+                  <span className='rounded-full bg-gray-100 px-2 py-1 text-sm font-medium text-gray-600'>
+                    Balance
+                  </span>
                 </td>
                 <td className='px-4 py-4 text-center font-semibold text-blue-600'>
                   14,350
@@ -577,15 +561,6 @@ export default function SalesForecastPage() {
             </tbody>
           </table>
         </div>
-
-        {/* Quick Actions */}
-        {/*<div className='mt-6 flex gap-4'>*/}
-        {/*  <Button variant='outline' className='flex items-center gap-2'>*/}
-        {/*    Export to Excel*/}
-        {/*  </Button>*/}
-        {/*  <Button variant='outline'>Schedule Report</Button>*/}
-        {/*  <Button variant='outline'>Save Forecast</Button>*/}
-        {/*</div>*/}
       </div>
     </div>
   );
