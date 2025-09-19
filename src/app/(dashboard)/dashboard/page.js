@@ -20,7 +20,12 @@ export default function DashboardPage() {
     cashTied: { value: 230000, trend: 15.2 },
     slowSKUs: { value: 7, trend: -14.3 },
   });
-  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [lastUpdated, setLastUpdated] = useState('');
+
+  // Set lastUpdated solo en cliente para evitar hydration mismatch
+  useEffect(() => {
+    setLastUpdated(new Date().toLocaleTimeString());
+  }, []);
 
   // Simular cambios en métricas basados en filtros
   useEffect(() => {
@@ -78,7 +83,7 @@ export default function DashboardPage() {
           trend: -14.3 + (Math.random() - 0.5) * 8,
         },
       });
-      setLastUpdated(new Date());
+  setLastUpdated(new Date().toLocaleTimeString());
     };
 
     adjustMetrics();
@@ -111,7 +116,7 @@ export default function DashboardPage() {
         trend: prev.slowSKUs.trend + (Math.random() - 0.5) * 4,
       },
     }));
-    setLastUpdated(new Date());
+  setLastUpdated(new Date().toLocaleTimeString());
   };
 
   function fixNumber(num) {
@@ -125,7 +130,7 @@ export default function DashboardPage() {
         <div>
           <h1 className='text-3xl font-bold text-gray-900'>Dashboard</h1>
           <p className='mt-1 text-sm text-gray-500'>
-            Last updated: {lastUpdated.toLocaleTimeString()}
+            Last updated: {lastUpdated}
           </p>
         </div>
         <div className='flex items-center gap-3'>
