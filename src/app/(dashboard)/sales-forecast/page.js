@@ -23,12 +23,12 @@ import MetricCard from '@/components/metricCard';
 import AIAssistantTrigger from '@/components/aiChat/ai-assistant-trigger';
 
 const baseChartData = [
-  { week: 'W1', demand: 2500, finishedGoods: 15000 },
-  { week: 'W2', demand: 2500, finishedGoods: 12500 },
-  { week: 'W3', demand: 2500, finishedGoods: 10500 },
-  { week: 'W4', demand: 2500, finishedGoods: 8000 },
-  { week: 'W5', demand: null, finishedGoods: null, forecast: 2600 },
-  { week: 'W6', demand: null, finishedGoods: null, forecast: 2650 },
+  { week: 'W33', demand: 2500, finishedGoods: 15000 },
+  { week: 'W34', demand: 2500, finishedGoods: 12500 },
+  { week: 'W35', demand: 2500, finishedGoods: 10500 },
+  { week: 'W36', demand: 2500, finishedGoods: 8000 },
+  { week: 'W37', demand: null, finishedGoods: null, forecast: 2600 },
+  { week: 'W38', demand: null, finishedGoods: null, forecast: 2650 },
 ];
 
 const baseSalesData = [
@@ -63,31 +63,105 @@ export default function SalesForecastPage() {
   const [chartData, setChartData] = useState(baseChartData);
   const [salesData, setSalesData] = useState(baseSalesData);
   const [isSimulating, setIsSimulating] = useState(false);
+  
+  // Estado para valores editables
+  const [editableActualValues, setEditableActualValues] = useState({
+    'Pistakio Classic': { w33: 330, w34: 345, w35: 320, w36: 346 },
+    'Pistakio Salted': { w33: 185, w34: 190, w35: 175, w36: 192 },
+    'Pistakio Chocolate': { w33: 135, w34: 140, w35: 150, w36: 154 }
+  });
+  
+  const [editablePlanValues, setEditablePlanValues] = useState({
+    'Pistakio Classic': { w33: 396, w34: 414, w35: 384, w36: 415 },
+    'Pistakio Salted': { w33: 222, w34: 228, w35: 210, w36: 230 },
+    'Pistakio Chocolate': { w33: 162, w34: 168, w35: 180, w36: 185 }
+  });
+
+  // Funciones para manejar cambios en valores editables
+  const handleActualValueChange = (sku, week, value) => {
+    const numValue = parseInt(value) || 0;
+    setEditableActualValues(prev => ({
+      ...prev,
+      [sku]: {
+        ...prev[sku],
+        [week]: numValue
+      }
+    }));
+  };
+
+  const handlePlanValueChange = (sku, week, value) => {
+    const numValue = parseInt(value) || 0;
+    setEditablePlanValues(prev => ({
+      ...prev,
+      [sku]: {
+        ...prev[sku],
+        [week]: numValue
+      }
+    }));
+  };
+
+  // Función para calcular el balance de Finished Goods dinámicamente
+  const calculateFinishedGoodsBalanceRaw = (week, multiplier = 1) => {
+    let initialStock = 15000; // Stock inicial
+    let cumulativeDemand = 0;
+    
+    // Sumar la demanda acumulada hasta la semana actual
+    const weeks = ['w33', 'w34', 'w35', 'w36'];
+    const weekIndex = weeks.indexOf(week);
+    
+    for (let i = 0; i <= weekIndex; i++) {
+      const weekKey = weeks[i];
+      Object.keys(editableActualValues).forEach(sku => {
+        cumulativeDemand += editableActualValues[sku][weekKey] || 0;
+      });
+    }
+    
+    const adjustedInitialStock = initialStock * multiplier;
+    const adjustedDemand = cumulativeDemand * multiplier;
+    
+    return Math.max(0, Math.round(adjustedInitialStock - adjustedDemand));
+  };
+
+  // Función wrapper que aplica los multiplicadores actuales
+  const calculateFinishedGoodsBalance = (week) => {
+    let multiplier = 1;
+    if (selectedSKU === 'pistakio-classic') multiplier = 0.45;
+    else if (selectedSKU === 'pistakio-salted') multiplier = 0.28;
+    else if (selectedSKU === 'pistakio-chocolate') multiplier = 0.27;
+
+    if (selectedChannel !== 'all-channels') {
+      if (selectedChannel === 'retail') multiplier *= 0.6;
+      else if (selectedChannel === 'online') multiplier *= 0.3;
+      else if (selectedChannel === 'wholesale') multiplier *= 0.1;
+    }
+    
+    return calculateFinishedGoodsBalanceRaw(week, multiplier);
+  };
 
   const getFilteredChartData = (data, range) => {
     if (range === '4w') {
-      return data.slice(0, 6); // W1-W6 (4 semanas históricas + 2 forecast)
+      return data.slice(0, 6); // W33-W38 (4 semanas históricas + 2 forecast)
     } else if (range === '8w') {
       // Extender datos para 8 semanas
       const extendedData = [...data];
-      for (let i = 7; i <= 10; i++) {
+      for (let i = 39; i <= 42; i++) {
         extendedData.push({
           week: `W${i}`,
           demand: null,
           finishedGoods: null,
-          forecast: Math.round(2600 + (i - 5) * 50),
+          forecast: Math.round(2600 + (i - 37) * 50),
         });
       }
       return extendedData;
     } else if (range === '12w') {
       // Extender datos para 12 semanas
       const extendedData = [...data];
-      for (let i = 7; i <= 14; i++) {
+      for (let i = 39; i <= 46; i++) {
         extendedData.push({
           week: `W${i}`,
           demand: null,
           finishedGoods: null,
-          forecast: Math.round(2600 + (i - 5) * 50),
+          forecast: Math.round(2600 + (i - 37) * 50),
         });
       }
       return extendedData;
@@ -95,7 +169,7 @@ export default function SalesForecastPage() {
     return data;
   };
 
-  // Actualizar datos cuando cambian los filtros
+  // Actualizar datos cuando cambian los filtros o valores editables
   useEffect(() => {
     const updateData = () => {
       let multiplier = 1;
@@ -115,58 +189,100 @@ export default function SalesForecastPage() {
       // Obtener datos filtrados por rango de semanas
       const baseData = getFilteredChartData(baseChartData, weekRange);
 
-      // Actualizar chart data con multiplicador y ajuste de forecast
-      const newChartData = baseData.map((item) => ({
-        ...item,
-        demand: item.demand ? Math.round(item.demand * multiplier) : null,
-        finishedGoods: item.finishedGoods
-          ? Math.round(item.finishedGoods * multiplier)
-          : null,
-        forecast: item.forecast
-          ? Math.round(
-              item.forecast * multiplier * (1 + forecastAdjustment[0] / 100),
-            )
-          : null,
+      // Mapeo de semanas: posiciones 0-3 del chart corresponden a las semanas W33-W36 de la tabla
+      const weekMapping = { 0: 'w33', 1: 'w34', 2: 'w35', 3: 'w36' };
+
+      // Actualizar chart data con valores reales de la tabla
+      const newChartData = baseData.map((item, index) => {
+        if (index < 4) {
+          // Para las primeras 4 semanas (W33-W36), usar los valores editables actuales
+          let weekDemand = 0;
+          
+          if (selectedSKU === 'all-skus') {
+            // Sumar todos los SKUs para la semana correspondiente
+            weekDemand = Object.keys(editableActualValues).reduce((sum, sku) => {
+              const weekKey = weekMapping[index];
+              return sum + (editableActualValues[sku][weekKey] || 0);
+            }, 0);
+          } else {
+            // Usar el SKU específico seleccionado
+            const skuName = selectedSKU.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+            const weekKey = weekMapping[index];
+            weekDemand = editableActualValues[skuName]?.[weekKey] || 0;
+          }
+          
+          // Calcular finished goods usando la misma función que la tabla
+          const weekKeys = ['w33', 'w34', 'w35', 'w36'];
+          const currentWeek = weekKeys[index];
+          const finishedGoodsBalance = calculateFinishedGoodsBalanceRaw(currentWeek, multiplier);
+          
+          return {
+            ...item,
+            demand: Math.round(weekDemand * multiplier),
+            finishedGoods: finishedGoodsBalance,
+          };
+        } else {
+          // Para forecast (W5 en adelante), usar el valor W36 como base + ajuste del slider
+          let forecastBase = 0;
+          
+          if (selectedSKU === 'all-skus') {
+            // Usar W36 como base para forecast
+            forecastBase = Object.keys(editableActualValues).reduce((sum, sku) => {
+              return sum + (editableActualValues[sku]['w36'] || 0);
+            }, 0);
+          } else {
+            const skuName = selectedSKU.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+            forecastBase = editableActualValues[skuName]?.['w36'] || 0;
+          }
+
+          return {
+            ...item,
+            demand: null,
+            finishedGoods: null,
+            forecast: Math.round(forecastBase * multiplier * (1 + forecastAdjustment[0] / 100)),
+          };
+        }
+      });
+
+      // Actualizar sales data con valores editables
+      let newSalesData = Object.keys(editableActualValues).map(sku => ({
+        sku,
+        w33: {
+          actual: editableActualValues[sku].w33,
+          plan: editablePlanValues[sku].w33,
+          left: `${Math.random() * 1000 + 6000 | 0} left`
+        },
+        w34: {
+          actual: editableActualValues[sku].w34,
+          plan: editablePlanValues[sku].w34,
+          left: `${Math.random() * 1000 + 5500 | 0} left`
+        },
+        w35: {
+          actual: editableActualValues[sku].w35,
+          plan: editablePlanValues[sku].w35,
+          left: `${Math.random() * 1000 + 5000 | 0} left`
+        },
+        w36: {
+          forecast: editableActualValues[sku].w36,
+          planForecast: editablePlanValues[sku].w36,
+          left: `${Math.random() * 1000 + 4500 | 0} left`
+        }
       }));
 
-      // Actualizar sales data
-      let newSalesData = baseSalesData;
+      // Filtrar por SKU si es necesario
       if (selectedSKU !== 'all-skus') {
         const skuName = selectedSKU
           .replace('-', ' ')
           .replace(/\b\w/g, (l) => l.toUpperCase());
-        newSalesData = baseSalesData.filter((item) => item.sku === skuName);
+        newSalesData = newSalesData.filter((item) => item.sku === skuName);
       }
-
-      // Aplicar multiplicador a sales data también
-      newSalesData = newSalesData.map((item) => ({
-        ...item,
-        w33: {
-          ...item.w33,
-          actual: Math.round(item.w33.actual * multiplier),
-        },
-        w34: {
-          ...item.w34,
-          actual: Math.round(item.w34.actual * multiplier),
-        },
-        w35: {
-          ...item.w35,
-          actual: Math.round(item.w35.actual * multiplier),
-        },
-        w36: {
-          ...item.w36,
-          forecast: Math.round(
-            item.w36.forecast * multiplier * (1 + forecastAdjustment[0] / 100),
-          ),
-        },
-      }));
 
       setChartData(newChartData);
       setSalesData(newSalesData);
     };
 
     updateData();
-  }, [selectedSKU, selectedChannel, forecastAdjustment, weekRange]);
+  }, [selectedSKU, selectedChannel, forecastAdjustment, weekRange, editableActualValues, editablePlanValues]);
 
   const getDaysOfCover = () => {
     const currentStock =
@@ -202,6 +318,54 @@ export default function SalesForecastPage() {
       );
     }
     return null;
+  };
+
+  // Componente para input editable en la tabla
+  const EditableCell = ({ value, onChange, type = 'actual' }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [tempValue, setTempValue] = useState(value);
+
+    const handleSave = () => {
+      onChange(tempValue);
+      setIsEditing(false);
+    };
+
+    const handleKeyPress = (e) => {
+      if (e.key === 'Enter') {
+        handleSave();
+      } else if (e.key === 'Escape') {
+        setTempValue(value);
+        setIsEditing(false);
+      }
+    };
+
+    return (
+      <div className='relative'>
+        {isEditing ? (
+          <input
+            type='number'
+            value={tempValue}
+            onChange={(e) => setTempValue(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyPress}
+            className='w-full border border-blue-300 rounded px-2 py-1 text-center font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500'
+            autoFocus
+          />
+        ) : (
+          <div 
+            className={`cursor-pointer hover:bg-gray-100 rounded px-2 py-1 font-semibold text-gray-900 ${
+              type === 'plan' ? 'text-orange-600' : 'text-blue-600'
+            }`}
+            onClick={() => {
+              setTempValue(value);
+              setIsEditing(true);
+            }}
+          >
+            {value}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -268,42 +432,59 @@ export default function SalesForecastPage() {
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <label className='mb-2 block text-sm text-gray-500'>
-            Forecast Adjustment {forecastAdjustment[0]}%
-          </label>
-          <div className='w-48 pt-2'>
-            <Slider
-              value={forecastAdjustment}
-              onValueChange={setForecastAdjustment}
-              max={50}
-              min={-50}
-              step={1}
-              className='w-full bg-blue-300'
-            />
-          </div>
-        </div>
+        {/* Forecast Adjustment slider eliminado */}
       </div>
 
-      {/* Alert for high adjustments */}
-      {Math.abs(forecastAdjustment[0]) > 20 && (
-        <div className='mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4'>
-          <div className='flex items-center gap-2 text-yellow-800'>
-            <AlertTriangle className='h-5 w-5' />
-            <span className='font-medium'>High Forecast Adjustment</span>
-          </div>
-          <p className='mt-1 text-sm text-yellow-700'>
-            Large forecast adjustments may indicate market volatility or data
-            quality issues.
-          </p>
-        </div>
-      )}
+      {/* Forecast Adjustment alert eliminado */}
 
       {/* Metrics Grid */}
       <div className='mb-8 grid grid-cols-1 gap-6 md:grid-cols-3'>
         <MetricCard
           title='Days of Cover'
-          value={getDaysOfCover()}
+          value={(() => {
+            // Stock actual = balance de W36 (dinámico) o valor estático
+            let stock;
+            let totalDemand = 0;
+            let count = 0;
+            const weeks = ['w33', 'w34', 'w35', 'w36'];
+            if (editableActualValues && Object.keys(editableActualValues).length > 0) {
+              stock = (() => {
+                try {
+                  if (selectedSKU === 'all-skus') {
+                    return Object.keys(editableActualValues).reduce((sum, sku) => sum + (editableActualValues[sku]['w36'] || 0), 0);
+                  } else {
+                    const skuName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    return editableActualValues[skuName]?.['w36'] || 0;
+                  }
+                } catch { return undefined; }
+              })();
+              weeks.forEach(week => {
+                if (selectedSKU === 'all-skus') {
+                  Object.keys(editableActualValues).forEach(sku => {
+                    totalDemand += editableActualValues[sku][week] || 0;
+                    count++;
+                  });
+                } else {
+                  const skuName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                  totalDemand += editableActualValues[skuName][week] || 0;
+                  count++;
+                }
+              });
+            }
+            if (!stock || stock === 0) {
+              stock = selectedSKU === 'all-skus' ? 15000
+                : selectedSKU === 'pistakio-classic' ? 6581
+                : selectedSKU === 'pistakio-salted' ? 3638
+                : 2811;
+              totalDemand = selectedSKU === 'all-skus' ? 2500 * 4
+                : selectedSKU === 'pistakio-classic' ? 332 * 4
+                : selectedSKU === 'pistakio-salted' ? 183 * 4
+                : 142 * 4;
+              count = 4;
+            }
+            const avgDemand = count > 0 ? totalDemand / count : 1;
+            return avgDemand > 0 ? Math.round(stock / avgDemand) : 0;
+          })()}
           subtitle='Current inventory coverage'
           borderColor={
             getDaysOfCover() < 10
@@ -322,21 +503,54 @@ export default function SalesForecastPage() {
         />
         <MetricCard
           title='Finished Goods Stock'
-          value={
-            selectedSKU === 'all-skus'
-              ? '15,000'
-              : selectedSKU === 'pistakio-classic'
-                ? '6,581'
-                : selectedSKU === 'pistakio-salted'
-                  ? '3,638'
-                  : '2,811'
-          }
+          value={(() => {
+            if (editableActualValues && Object.keys(editableActualValues).length > 0) {
+              if (selectedSKU === 'all-skus') {
+                return Object.keys(editableActualValues).reduce((sum, sku) => sum + (editableActualValues[sku]['w36'] || 0), 0).toLocaleString();
+              } else {
+                const skuName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                return (editableActualValues[skuName]?.['w36'] || 0).toLocaleString();
+              }
+            }
+            return selectedSKU === 'all-skus' ? '15,000'
+              : selectedSKU === 'pistakio-classic' ? '6,581'
+              : selectedSKU === 'pistakio-salted' ? '3,638'
+              : '2,811';
+          })()}
           subtitle='$105,000'
           borderColor='blue'
         />
         <MetricCard
           title='Forecasted Sales (4w)'
-          value={`${Math.round(16500 * (1 + forecastAdjustment[0] / 100)).toLocaleString()} units`}
+          value={(() => {
+            // Suma de forecast de W37-W40
+            let forecast = 0;
+            let multiplier = 1;
+            if (selectedSKU === 'pistakio-classic') multiplier = 0.45;
+            else if (selectedSKU === 'pistakio-salted') multiplier = 0.28;
+            else if (selectedSKU === 'pistakio-chocolate') multiplier = 0.27;
+            if (selectedChannel !== 'all-channels') {
+              if (selectedChannel === 'retail') multiplier *= 0.6;
+              else if (selectedChannel === 'online') multiplier *= 0.3;
+              else if (selectedChannel === 'wholesale') multiplier *= 0.1;
+            }
+            // Usar forecast base de la última semana editable
+            let base = 0;
+            if (editableActualValues && Object.keys(editableActualValues).length > 0) {
+              if (selectedSKU === 'all-skus') {
+                base = Object.keys(editableActualValues).reduce((sum, sku) => sum + (editableActualValues[sku]['w36'] || 0), 0);
+              } else {
+                const skuName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                base = editableActualValues[skuName]['w36'] || 0;
+              }
+            } else {
+              base = selectedSKU === 'all-skus' ? 412 : selectedSKU === 'pistakio-classic' ? 346 : selectedSKU === 'pistakio-salted' ? 192 : 154;
+            }
+            for (let i = 1; i <= 4; i++) {
+              forecast += Math.round(base * multiplier);
+            }
+            return `${forecast.toLocaleString()} units`;
+          })()}
           subtitle={`$${Math.round(121100 * (1 + forecastAdjustment[0] / 100)).toLocaleString()}`}
           borderColor='blue'
           trend={forecastAdjustment[0]}
@@ -392,46 +606,68 @@ export default function SalesForecastPage() {
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <p className='mt-4 text-center text-sm text-gray-500'>
-          Forecast begins at W5 • Simulation available • Adjust forecast with
-          slider above
-        </p>
+        <div className='mt-4 text-center text-sm text-gray-500'>
+          <p>
+            W33-W36: Actual values from table • W37+: Forecast based on W36 data • 
+            Adjust forecast with slider above
+          </p>
+          <p className='mt-1 text-xs text-blue-600'>
+            💡 Edit values in the table below to see changes reflected here
+          </p>
+          <div className='mt-2 flex justify-center gap-6 text-xs'>
+            <div className='flex items-center gap-1'>
+              <div className='w-3 h-0.5 bg-blue-500'></div>
+              <span>Actual Demand (Editable)</span>
+            </div>
+            <div className='flex items-center gap-1'>
+              <div className='w-3 h-0.5 bg-green-500'></div>
+              <span>Finished Goods Stock</span>
+            </div>
+            <div className='flex items-center gap-1'>
+              <div className='w-3 h-0.5 bg-orange-500 border-dashed'></div>
+              <span>Demand Forecast</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Sales Table */}
       <div className='rounded-lg border border-gray-200 bg-white p-6'>
-        <div className='mb-6 flex items-center justify-between'>
-          <h2 className='text-xl font-semibold text-gray-900'>
-            Sales by SKU & Week
-          </h2>
-          <div className='flex items-center gap-4'>
-            <div className='flex items-center gap-2 text-sm text-gray-600'>
-              <span className='font-medium'>A</span>
-              <span>Actual</span>
-              <span className='ml-4 font-medium'>F</span>
-              <span>Forecast</span>
+          <div className='mb-6 flex items-center justify-between'>
+            <div>
+              <h2 className='text-xl font-semibold text-gray-900'>
+                Sales by SKU & Week
+              </h2>
+              <p className='text-sm text-gray-500 mt-1'>
+                Click on any value to edit • Changes affect the forecast chart
+              </p>
             </div>
-            <div className='flex items-center gap-2'>
-              <label className='text-sm text-gray-500'>Channel:</label>
-              <Select
-                value={selectedChannel}
-                onValueChange={setSelectedChannel}
-              >
-                <SelectTrigger className='w-32'>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='all-channels'>All Channels</SelectItem>
-                  <SelectItem value='retail'>Retail</SelectItem>
-                  <SelectItem value='online'>Online</SelectItem>
-                  <SelectItem value='wholesale'>Wholesale</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className='flex items-center gap-4'>
+              <div className='flex items-center gap-2 text-sm text-gray-600'>
+                <span className='font-medium'>A</span>
+                <span>Actual</span>
+                <span className='ml-4 font-medium'>F</span>
+                <span>Forecast</span>
+              </div>
+              <div className='flex items-center gap-2'>
+                <label className='text-sm text-gray-500'>Channel:</label>
+                <Select
+                  value={selectedChannel}
+                  onValueChange={setSelectedChannel}
+                >
+                  <SelectTrigger className='w-32'>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='all-channels'>All Channels</SelectItem>
+                    <SelectItem value='retail'>Retail</SelectItem>
+                    <SelectItem value='online'>Online</SelectItem>
+                    <SelectItem value='wholesale'>Wholesale</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
-        </div>
-
-        <div className='overflow-x-auto'>
+          </div>        <div className='overflow-x-auto'>
           <table className='w-full'>
             <thead>
               <tr className='border-b border-gray-200'>
@@ -462,8 +698,8 @@ export default function SalesForecastPage() {
             <tbody>
               {salesData.map((row, index) => (
                 <React.Fragment key={index}>
-                  {/* Fila del Plan */}
-                  <tr className='hover:bg-gray-25 cursor-pointer border-b border-gray-100 transition-colors'>
+                  {/* Fila Actual */}
+                  <tr className='hover:bg-gray-25 border-b border-gray-100 transition-colors'>
                     <td
                       rowSpan='2'
                       className='w-40 border-r border-gray-200 px-4 py-4 align-middle font-medium text-gray-900'
@@ -482,84 +718,144 @@ export default function SalesForecastPage() {
                       </span>
                     </td>
                     <td className='px-4 py-2 text-center'>
-                      <div className='font-semibold text-gray-900'>
-                        {row.w33.plan || row.w33.actual}
-                      </div>
+                      <EditableCell
+                        value={editableActualValues[row.sku]?.w33 || row.w33.actual}
+                        onChange={(value) => handleActualValueChange(row.sku, 'w33', value)}
+                        type='actual'
+                      />
                     </td>
                     <td className='px-4 py-2 text-center'>
-                      <div className='font-semibold text-gray-900'>
-                        {row.w34.plan || row.w34.actual}
-                      </div>
+                      <EditableCell
+                        value={editableActualValues[row.sku]?.w34 || row.w34.actual}
+                        onChange={(value) => handleActualValueChange(row.sku, 'w34', value)}
+                        type='actual'
+                      />
                     </td>
                     <td className='px-4 py-2 text-center'>
-                      <div className='font-semibold text-gray-900'>
-                        {row.w35.plan || row.w35.actual}
-                      </div>
+                      <EditableCell
+                        value={editableActualValues[row.sku]?.w35 || row.w35.actual}
+                        onChange={(value) => handleActualValueChange(row.sku, 'w35', value)}
+                        type='actual'
+                      />
                     </td>
                     <td className='px-4 py-2 text-center'>
-                      <div className='font-semibold text-gray-900'>
-                        {row.w36.planForecast || row.w36.forecast}
-                      </div>
+                      <EditableCell
+                        value={editableActualValues[row.sku]?.w36 || row.w36.forecast}
+                        onChange={(value) => handleActualValueChange(row.sku, 'w36', value)}
+                        type='actual'
+                      />
                     </td>
                   </tr>
 
-                  <tr className='cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-50'>
+                  {/* Fila Plan */}
+                  <tr className='border-b border-gray-100 transition-colors hover:bg-gray-50'>
                     <td className='px-4 py-2 text-center'>
                       <span className='rounded-lg bg-orange-50 px-4 py-1 text-sm font-medium text-orange-600'>
                         Plan
                       </span>
                     </td>
                     <td className='px-4 py-2 text-center'>
-                      <div className='font-semibold text-gray-900'>
-                        {Math.round(row.w33.actual * 1.2)}
-                      </div>
+                      <EditableCell
+                        value={editablePlanValues[row.sku]?.w33 || Math.round(row.w33.actual * 1.2)}
+                        onChange={(value) => handlePlanValueChange(row.sku, 'w33', value)}
+                        type='plan'
+                      />
                     </td>
                     <td className='px-4 py-2 text-center'>
-                      <div className='font-semibold text-gray-900'>
-                        {Math.round(row.w34.actual * 1.2)}
-                      </div>
+                      <EditableCell
+                        value={editablePlanValues[row.sku]?.w34 || Math.round(row.w34.actual * 1.2)}
+                        onChange={(value) => handlePlanValueChange(row.sku, 'w34', value)}
+                        type='plan'
+                      />
                     </td>
                     <td className='px-4 py-2 text-center'>
-                      <div className='font-semibold text-gray-900'>
-                        {Math.round(row.w35.actual * 1.2)}
-                      </div>
+                      <EditableCell
+                        value={editablePlanValues[row.sku]?.w35 || Math.round(row.w35.actual * 1.2)}
+                        onChange={(value) => handlePlanValueChange(row.sku, 'w35', value)}
+                        type='plan'
+                      />
                     </td>
                     <td className='px-4 py-2 text-center'>
-                      <div className='font-semibold text-gray-900'>
-                        {Math.round(+row.w36.forecast * 1.2)}
-                      </div>
+                      <EditableCell
+                        value={editablePlanValues[row.sku]?.w36 || Math.round(row.w36.forecast * 1.2)}
+                        onChange={(value) => handlePlanValueChange(row.sku, 'w36', value)}
+                        type='plan'
+                      />
                     </td>
                   </tr>
                 </React.Fragment>
               ))}
               {/* Fila del Balance de Productos Terminados */}
-              <tr className='bg-gray-50'>
-                <td className='px-4 py-4 font-semibold text-blue-600'>
-                  Finished Goods Balance
+              <tr className='bg-gradient-to-r from-green-50 to-blue-50 border-t-2 border-green-200'>
+                <td className='px-4 py-4 font-semibold text-green-700'>
+                  <div className='flex items-center gap-2'>
+                    Finished Goods Balance
+                    <div className='text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full'>
+                      Stock Remaining
+                    </div>
+                  </div>
                 </td>
                 <td className='px-4 py-4 text-center'>
-                  <span className='rounded-full bg-gray-100 px-2 py-1 text-sm font-medium text-gray-600'>
+                  <span className='rounded-full bg-green-100 px-2 py-1 text-sm font-medium text-green-700'>
                     Balance
                   </span>
                 </td>
-                <td className='px-4 py-4 text-center font-semibold text-blue-600'>
-                  14,350
+                <td className='px-4 py-4 text-center'>
+                  <div className='font-semibold text-green-700'>
+                    {calculateFinishedGoodsBalance('w33').toLocaleString()}
+                  </div>
+                  <div className='text-xs text-gray-500 mt-1'>
+                    -{Object.keys(editableActualValues).reduce((sum, sku) => 
+                      sum + (editableActualValues[sku]['w33'] || 0), 0).toLocaleString()} sold
+                  </div>
                 </td>
-                <td className='px-4 py-4 text-center font-semibold text-blue-600'>
-                  13,675
+                <td className='px-4 py-4 text-center'>
+                  <div className='font-semibold text-green-700'>
+                    {calculateFinishedGoodsBalance('w34').toLocaleString()}
+                  </div>
+                  <div className='text-xs text-gray-500 mt-1'>
+                    -{Object.keys(editableActualValues).reduce((sum, sku) => 
+                      sum + (editableActualValues[sku]['w34'] || 0), 0).toLocaleString()} sold
+                  </div>
                 </td>
-                <td className='px-4 py-4 text-center font-semibold text-blue-600'>
-                  13,030
+                <td className='px-4 py-4 text-center'>
+                  <div className='font-semibold text-green-700'>
+                    {calculateFinishedGoodsBalance('w35').toLocaleString()}
+                  </div>
+                  <div className='text-xs text-gray-500 mt-1'>
+                    -{Object.keys(editableActualValues).reduce((sum, sku) => 
+                      sum + (editableActualValues[sku]['w35'] || 0), 0).toLocaleString()} sold
+                  </div>
                 </td>
-                <td className='px-4 py-4 text-center font-semibold text-blue-600'>
-                  {(
-                    13030 -
-                    salesData.reduce((sum, row) => sum + row.w36.forecast, 0)
-                  ).toLocaleString()}
+                <td className='px-4 py-4 text-center'>
+                  <div className='font-semibold text-green-700'>
+                    {calculateFinishedGoodsBalance('w36').toLocaleString()}
+                  </div>
+                  <div className='text-xs text-gray-500 mt-1'>
+                    -{Object.keys(editableActualValues).reduce((sum, sku) => 
+                      sum + (editableActualValues[sku]['w36'] || 0), 0).toLocaleString()} sold
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
+        </div>
+        
+        {/* Nota explicativa sobre Finished Goods Balance */}
+        <div className='mt-4 p-4 bg-green-50 border border-green-200 rounded-lg'>
+          <div className='flex items-center gap-2 mb-2'>
+            <div className='w-3 h-3 bg-green-500 rounded-full'></div>
+            <h3 className='font-medium text-green-800'>Finished Goods Balance Explained</h3>
+          </div>
+          <p className='text-sm text-green-700 mb-2'>
+            The balance shows remaining inventory after each week's sales:
+          </p>
+          <ul className='text-xs text-green-600 space-y-1 ml-4'>
+            <li>• Starts with initial stock (varies by SKU/Channel filter)</li>
+            <li>• Subtracts cumulative sales week by week</li>
+            <li>• Updates automatically when you edit Actual values above</li>
+            <li>• Green line in chart represents this same data</li>
+          </ul>
         </div>
       </div>
     </div>
