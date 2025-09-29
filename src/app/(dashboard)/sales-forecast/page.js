@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { Play, RotateCcw, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Play, RotateCcw, TrendingUp, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -31,73 +31,137 @@ const baseChartData = [
   { week: 'W38', demand: null, finishedGoods: null, forecast: 2650 },
 ];
 
-const baseSalesData = [
-  {
-    sku: 'Pistakio Classic',
-    w33: { actual: 330, left: '7,246 left' },
-    w34: { actual: 345, left: '6,901 left' },
-    w35: { actual: 320, left: '6,581 left' },
-    w36: { forecast: 346, left: '6,235 left' },
+const baseCategoriesData = {
+  'Pistakios': {
+    products: {
+      'Pistakio Classic': {
+        w33: { actual: 330, left: '7,246 left' },
+        w34: { actual: 345, left: '6,901 left' },
+        w35: { actual: 320, left: '6,581 left' },
+        w36: { forecast: 346, left: '6,235 left' },
+      },
+      'Pistakio Salted': {
+        w33: { actual: 185, left: '4,003 left' },
+        w34: { actual: 190, left: '3,813 left' },
+        w35: { actual: 175, left: '3,638 left' },
+        w36: { forecast: 192, left: '3,446 left' },
+      },
+      'Pistakio Chocolate': {
+        w33: { actual: 135, left: '3,101 left' },
+        w34: { actual: 140, left: '2,961 left' },
+        w35: { actual: 150, left: '2,811 left' },
+        w36: { forecast: 154, left: '2,657 left' },
+      },
+    }
   },
-  {
-    sku: 'Pistakio Salted',
-    w33: { actual: 185, left: '4,003 left' },
-    w34: { actual: 190, left: '3,813 left' },
-    w35: { actual: 175, left: '3,638 left' },
-    w36: { forecast: 192, left: '3,446 left' },
-  },
-  {
-    sku: 'Pistakio Chocolate',
-    w33: { actual: 135, left: '3,101 left' },
-    w34: { actual: 140, left: '2,961 left' },
-    w35: { actual: 150, left: '2,811 left' },
-    w36: { forecast: 154, left: '2,657 left' },
-  },
-];
+  'Almonds': {
+    products: {
+      'Almond Classic': {
+        w33: { actual: 220, left: '5,120 left' },
+        w34: { actual: 235, left: '4,885 left' },
+        w35: { actual: 210, left: '4,675 left' },
+        w36: { forecast: 238, left: '4,437 left' },
+      },
+      'Almond Honey': {
+        w33: { actual: 165, left: '3,890 left' },
+        w34: { actual: 170, left: '3,720 left' },
+        w35: { actual: 155, left: '3,565 left' },
+        w36: { forecast: 172, left: '3,393 left' },
+      },
+    }
+  }
+};
 
 export default function SalesForecastPage() {
-  const [selectedSKU, setSelectedSKU] = useState('all-skus');
+  const [selectedSKU, setSelectedSKU] = useState('all-categories');
   const [selectedChannel, setSelectedChannel] = useState('all-channels');
   const [weekRange, setWeekRange] = useState('4w');
   const [forecastAdjustment, setForecastAdjustment] = useState([0]);
   const [chartData, setChartData] = useState(baseChartData);
-  const [salesData, setSalesData] = useState(baseSalesData);
+  const [salesData, setSalesData] = useState([]);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   
-  // Estado para valores editables
+  // Estado para valores editables por categoría y producto
   const [editableActualValues, setEditableActualValues] = useState({
-    'Pistakio Classic': { w33: 330, w34: 345, w35: 320, w36: 346 },
-    'Pistakio Salted': { w33: 185, w34: 190, w35: 175, w36: 192 },
-    'Pistakio Chocolate': { w33: 135, w34: 140, w35: 150, w36: 154 }
+    'Pistakios': {
+      'Pistakio Classic': { w33: 330, w34: 345, w35: 320, w36: 346 },
+      'Pistakio Salted': { w33: 185, w34: 190, w35: 175, w36: 192 },
+      'Pistakio Chocolate': { w33: 135, w34: 140, w35: 150, w36: 154 }
+    },
+    'Almonds': {
+      'Almond Classic': { w33: 220, w34: 235, w35: 210, w36: 238 },
+      'Almond Honey': { w33: 165, w34: 170, w35: 155, w36: 172 }
+    }
   });
   
   const [editablePlanValues, setEditablePlanValues] = useState({
-    'Pistakio Classic': { w33: 396, w34: 414, w35: 384, w36: 415 },
-    'Pistakio Salted': { w33: 222, w34: 228, w35: 210, w36: 230 },
-    'Pistakio Chocolate': { w33: 162, w34: 168, w35: 180, w36: 185 }
+    'Pistakios': {
+      'Pistakio Classic': { w33: 396, w34: 414, w35: 384, w36: 415 },
+      'Pistakio Salted': { w33: 222, w34: 228, w35: 210, w36: 230 },
+      'Pistakio Chocolate': { w33: 162, w34: 168, w35: 180, w36: 185 }
+    },
+    'Almonds': {
+      'Almond Classic': { w33: 264, w34: 282, w35: 252, w36: 286 },
+      'Almond Honey': { w33: 198, w34: 204, w35: 186, w36: 206 }
+    }
   });
 
+  // Estado para controlar qué categorías están expandidas
+  const [expandedCategories, setExpandedCategories] = useState(new Set(['Pistakios']));
+
+
+
   // Funciones para manejar cambios en valores editables
-  const handleActualValueChange = (sku, week, value) => {
+  const handleActualValueChange = (category, product, week, value) => {
     const numValue = parseInt(value) || 0;
     setEditableActualValues(prev => ({
       ...prev,
-      [sku]: {
-        ...prev[sku],
-        [week]: numValue
+      [category]: {
+        ...prev[category],
+        [product]: {
+          ...prev[category][product],
+          [week]: numValue
+        }
       }
     }));
   };
 
-  const handlePlanValueChange = (sku, week, value) => {
+  const handlePlanValueChange = (category, product, week, value) => {
     const numValue = parseInt(value) || 0;
     setEditablePlanValues(prev => ({
       ...prev,
-      [sku]: {
-        ...prev[sku],
-        [week]: numValue
+      [category]: {
+        ...prev[category],
+        [product]: {
+          ...prev[category][product],
+          [week]: numValue
+        }
       }
     }));
+  };
+
+  // Función para alternar la expansión de categorías
+  const toggleCategoryExpansion = (category) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
+
+  // Función para calcular totales de categoría por semana
+  const getCategoryTotal = (category, week, type = 'actual') => {
+    const values = type === 'actual' ? editableActualValues : editablePlanValues;
+    if (!values[category]) return 0;
+    
+    return Object.keys(values[category]).reduce((sum, product) => {
+      return sum + (values[category][product][week] || 0);
+    }, 0);
   };
 
   // Función para calcular el balance de Finished Goods dinámicamente
@@ -111,8 +175,10 @@ export default function SalesForecastPage() {
     
     for (let i = 0; i <= weekIndex; i++) {
       const weekKey = weeks[i];
-      Object.keys(editableActualValues).forEach(sku => {
-        cumulativeDemand += editableActualValues[sku][weekKey] || 0;
+      Object.keys(editableActualValues).forEach(category => {
+        Object.keys(editableActualValues[category]).forEach(product => {
+          cumulativeDemand += editableActualValues[category][product][weekKey] || 0;
+        });
       });
     }
     
@@ -125,9 +191,15 @@ export default function SalesForecastPage() {
   // Función wrapper que aplica los multiplicadores actuales
   const calculateFinishedGoodsBalance = (week) => {
     let multiplier = 1;
-    if (selectedSKU === 'pistakio-classic') multiplier = 0.45;
-    else if (selectedSKU === 'pistakio-salted') multiplier = 0.28;
-    else if (selectedSKU === 'pistakio-chocolate') multiplier = 0.27;
+    
+    // Ajustar multiplicadores para la nueva estructura
+    if (selectedSKU === 'pistakios') multiplier = 0.65; // Total categoría Pistakios
+    else if (selectedSKU === 'almonds') multiplier = 0.35; // Total categoría Almonds
+    else if (selectedSKU === 'pistakio-classic') multiplier = 0.30;
+    else if (selectedSKU === 'pistakio-salted') multiplier = 0.18;
+    else if (selectedSKU === 'pistakio-chocolate') multiplier = 0.17;
+    else if (selectedSKU === 'almond-classic') multiplier = 0.22;
+    else if (selectedSKU === 'almond-honey') multiplier = 0.13;
 
     if (selectedChannel !== 'all-channels') {
       if (selectedChannel === 'retail') multiplier *= 0.6;
@@ -169,8 +241,15 @@ export default function SalesForecastPage() {
     return data;
   };
 
+  // Efecto para marcar cuando el componente se hidrata
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
   // Actualizar datos cuando cambian los filtros o valores editables
   useEffect(() => {
+    if (!isHydrated) return; // Esperar a que se hidrate antes de actualizar
+    
     const updateData = () => {
       let multiplier = 1;
 
@@ -198,17 +277,36 @@ export default function SalesForecastPage() {
           // Para las primeras 4 semanas (W33-W36), usar los valores editables actuales
           let weekDemand = 0;
           
-          if (selectedSKU === 'all-skus') {
-            // Sumar todos los SKUs para la semana correspondiente
-            weekDemand = Object.keys(editableActualValues).reduce((sum, sku) => {
-              const weekKey = weekMapping[index];
-              return sum + (editableActualValues[sku][weekKey] || 0);
+          if (selectedSKU === 'all-categories') {
+            // Sumar todas las categorías y productos
+            weekDemand = Object.keys(editableActualValues).reduce((sum, category) => {
+              return sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => {
+                const weekKey = weekMapping[index];
+                return categorySum + (editableActualValues[category][product][weekKey] || 0);
+              }, 0);
             }, 0);
+          } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
+            // Sumar una categoría completa
+            const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
+            if (editableActualValues[categoryName]) {
+              weekDemand = Object.keys(editableActualValues[categoryName]).reduce((sum, product) => {
+                const weekKey = weekMapping[index];
+                return sum + (editableActualValues[categoryName][product][weekKey] || 0);
+              }, 0);
+            }
           } else {
-            // Usar el SKU específico seleccionado
-            const skuName = selectedSKU.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+            // Usar un producto específico
+            const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
             const weekKey = weekMapping[index];
-            weekDemand = editableActualValues[skuName]?.[weekKey] || 0;
+            
+            // Buscar el producto en todas las categorías
+            let found = false;
+            Object.keys(editableActualValues).forEach(category => {
+              if (editableActualValues[category][productName]) {
+                weekDemand = editableActualValues[category][productName][weekKey] || 0;
+                found = true;
+              }
+            });
           }
           
           // Calcular finished goods usando la misma función que la tabla
@@ -225,14 +323,29 @@ export default function SalesForecastPage() {
           // Para forecast (W5 en adelante), usar el valor W36 como base + ajuste del slider
           let forecastBase = 0;
           
-          if (selectedSKU === 'all-skus') {
-            // Usar W36 como base para forecast
-            forecastBase = Object.keys(editableActualValues).reduce((sum, sku) => {
-              return sum + (editableActualValues[sku]['w36'] || 0);
+          if (selectedSKU === 'all-categories') {
+            // Usar W36 como base para forecast de todas las categorías
+            forecastBase = Object.keys(editableActualValues).reduce((sum, category) => {
+              return sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => {
+                return categorySum + (editableActualValues[category][product]['w36'] || 0);
+              }, 0);
             }, 0);
+          } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
+            // Usar W36 de una categoría completa
+            const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
+            if (editableActualValues[categoryName]) {
+              forecastBase = Object.keys(editableActualValues[categoryName]).reduce((sum, product) => {
+                return sum + (editableActualValues[categoryName][product]['w36'] || 0);
+              }, 0);
+            }
           } else {
-            const skuName = selectedSKU.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-            forecastBase = editableActualValues[skuName]?.['w36'] || 0;
+            // Usar W36 de un producto específico
+            const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+            Object.keys(editableActualValues).forEach(category => {
+              if (editableActualValues[category][productName]) {
+                forecastBase = editableActualValues[category][productName]['w36'] || 0;
+              }
+            });
           }
 
           return {
@@ -244,37 +357,83 @@ export default function SalesForecastPage() {
         }
       });
 
-      // Actualizar sales data con valores editables
-      let newSalesData = Object.keys(editableActualValues).map(sku => ({
-        sku,
-        w33: {
-          actual: editableActualValues[sku].w33,
-          plan: editablePlanValues[sku].w33,
-          left: `${Math.random() * 1000 + 6000 | 0} left`
-        },
-        w34: {
-          actual: editableActualValues[sku].w34,
-          plan: editablePlanValues[sku].w34,
-          left: `${Math.random() * 1000 + 5500 | 0} left`
-        },
-        w35: {
-          actual: editableActualValues[sku].w35,
-          plan: editablePlanValues[sku].w35,
-          left: `${Math.random() * 1000 + 5000 | 0} left`
-        },
-        w36: {
-          forecast: editableActualValues[sku].w36,
-          planForecast: editablePlanValues[sku].w36,
-          left: `${Math.random() * 1000 + 4500 | 0} left`
+      // Crear sales data con estructura de categorías
+      let newSalesData = [];
+      
+      Object.keys(editableActualValues).forEach(categoryName => {
+        // Agregar fila de categoría
+        const categoryData = {
+          type: 'category',
+          name: categoryName,
+          isExpanded: expandedCategories.has(categoryName),
+          w33: {
+            actual: getCategoryTotal(categoryName, 'w33', 'actual'),
+            plan: getCategoryTotal(categoryName, 'w33', 'plan'),
+          },
+          w34: {
+            actual: getCategoryTotal(categoryName, 'w34', 'actual'),
+            plan: getCategoryTotal(categoryName, 'w34', 'plan'),
+          },
+          w35: {
+            actual: getCategoryTotal(categoryName, 'w35', 'actual'),
+            plan: getCategoryTotal(categoryName, 'w35', 'plan'),
+          },
+          w36: {
+            forecast: getCategoryTotal(categoryName, 'w36', 'actual'),
+            planForecast: getCategoryTotal(categoryName, 'w36', 'plan'),
+          }
+        };
+        newSalesData.push(categoryData);
+        
+        // Si la categoría está expandida, agregar productos
+        if (expandedCategories.has(categoryName)) {
+          Object.keys(editableActualValues[categoryName]).forEach(productName => {
+            const productData = {
+              type: 'product',
+              category: categoryName,
+              name: productName,
+              w33: {
+                actual: editableActualValues[categoryName][productName].w33,
+                plan: editablePlanValues[categoryName][productName].w33,
+                left: `${6500 - (productName.length * 50)} left`
+              },
+              w34: {
+                actual: editableActualValues[categoryName][productName].w34,
+                plan: editablePlanValues[categoryName][productName].w34,
+                left: `${6000 - (productName.length * 50)} left`
+              },
+              w35: {
+                actual: editableActualValues[categoryName][productName].w35,
+                plan: editablePlanValues[categoryName][productName].w35,
+                left: `${5500 - (productName.length * 50)} left`
+              },
+              w36: {
+                forecast: editableActualValues[categoryName][productName].w36,
+                planForecast: editablePlanValues[categoryName][productName].w36,
+                left: `${5000 - (productName.length * 50)} left`
+              }
+            };
+            newSalesData.push(productData);
+          });
         }
-      }));
+      });
 
-      // Filtrar por SKU si es necesario
-      if (selectedSKU !== 'all-skus') {
-        const skuName = selectedSKU
-          .replace('-', ' ')
-          .replace(/\b\w/g, (l) => l.toUpperCase());
-        newSalesData = newSalesData.filter((item) => item.sku === skuName);
+      // Filtrar por selección si es necesario
+      if (selectedSKU !== 'all-categories') {
+        if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
+          // Mostrar solo una categoría
+          const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
+          newSalesData = newSalesData.filter(item => 
+            item.name === categoryName || item.category === categoryName
+          );
+        } else {
+          // Mostrar solo un producto específico
+          const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+          newSalesData = newSalesData.filter(item => 
+            item.name === productName || 
+            (item.type === 'category' && Object.keys(editableActualValues[item.name] || {}).includes(productName))
+          );
+        }
       }
 
       setChartData(newChartData);
@@ -282,25 +441,45 @@ export default function SalesForecastPage() {
     };
 
     updateData();
-  }, [selectedSKU, selectedChannel, forecastAdjustment, weekRange, editableActualValues, editablePlanValues]);
+  }, [selectedSKU, selectedChannel, forecastAdjustment, weekRange, editableActualValues, editablePlanValues, isHydrated, expandedCategories]);
 
   const getDaysOfCover = () => {
     const currentStock =
-      selectedSKU === 'all-skus'
+      selectedSKU === 'all-categories'
         ? 15000
+        : selectedSKU === 'pistakios'
+          ? 9750
+        : selectedSKU === 'almonds'
+          ? 5250
         : selectedSKU === 'pistakio-classic'
           ? 6581
           : selectedSKU === 'pistakio-salted'
             ? 3638
-            : 2811;
+            : selectedSKU === 'pistakio-chocolate'
+              ? 2811
+            : selectedSKU === 'almond-classic'
+              ? 4437
+            : selectedSKU === 'almond-honey'
+              ? 3393
+            : 2500;
     const avgDemand =
-      selectedSKU === 'all-skus'
-        ? 2500
+      selectedSKU === 'all-categories'
+        ? 1465
+        : selectedSKU === 'pistakios'
+          ? 850
+        : selectedSKU === 'almonds'
+          ? 385
         : selectedSKU === 'pistakio-classic'
-          ? 332
+          ? 346
           : selectedSKU === 'pistakio-salted'
-            ? 183
-            : 142;
+            ? 192
+            : selectedSKU === 'pistakio-chocolate'
+              ? 154
+            : selectedSKU === 'almond-classic'
+              ? 238
+            : selectedSKU === 'almond-honey'
+              ? 172
+            : 200;
     return Math.round(currentStock / avgDemand);
   };
 
@@ -368,6 +547,25 @@ export default function SalesForecastPage() {
     );
   };
 
+  // Evitar hydration mismatch
+  if (!isHydrated) {
+    return (
+      <div className='p-8'>
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+          <div className="grid grid-cols-3 gap-6 mb-8">
+            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-32 bg-gray-200 rounded"></div>
+          </div>
+          <div className="h-80 bg-gray-200 rounded mb-8"></div>
+          <div className="h-96 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className='p-8'>
       {/* Header */}
@@ -410,12 +608,14 @@ export default function SalesForecastPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className='bg-white'>
-              <SelectItem value='all-skus'>All SKUs</SelectItem>
+              <SelectItem value='all-categories'>All Categories</SelectItem>
+              <SelectItem value='pistakios'>Pistakios Category</SelectItem>
+              <SelectItem value='almonds'>Almonds Category</SelectItem>
               <SelectItem value='pistakio-classic'>Pistakio Classic</SelectItem>
               <SelectItem value='pistakio-salted'>Pistakio Salted</SelectItem>
-              <SelectItem value='pistakio-chocolate'>
-                Pistakio Chocolate
-              </SelectItem>
+              <SelectItem value='pistakio-chocolate'>Pistakio Chocolate</SelectItem>
+              <SelectItem value='almond-classic'>Almond Classic</SelectItem>
+              <SelectItem value='almond-honey'>Almond Honey</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -447,39 +647,80 @@ export default function SalesForecastPage() {
             let totalDemand = 0;
             let count = 0;
             const weeks = ['w33', 'w34', 'w35', 'w36'];
+            
             if (editableActualValues && Object.keys(editableActualValues).length > 0) {
               stock = (() => {
                 try {
-                  if (selectedSKU === 'all-skus') {
-                    return Object.keys(editableActualValues).reduce((sum, sku) => sum + (editableActualValues[sku]['w36'] || 0), 0);
+                  if (selectedSKU === 'all-categories') {
+                    return Object.keys(editableActualValues).reduce((sum, category) => 
+                      sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => 
+                        categorySum + (editableActualValues[category][product]['w36'] || 0), 0), 0);
+                  } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
+                    const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
+                    if (editableActualValues[categoryName]) {
+                      return Object.keys(editableActualValues[categoryName]).reduce((sum, product) => 
+                        sum + (editableActualValues[categoryName][product]['w36'] || 0), 0);
+                    }
                   } else {
-                    const skuName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    return editableActualValues[skuName]?.['w36'] || 0;
+                    const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    for (const category of Object.keys(editableActualValues)) {
+                      if (editableActualValues[category][productName]) {
+                        return editableActualValues[category][productName]['w36'] || 0;
+                      }
+                    }
                   }
+                  return 0;
                 } catch { return undefined; }
               })();
+              
               weeks.forEach(week => {
-                if (selectedSKU === 'all-skus') {
-                  Object.keys(editableActualValues).forEach(sku => {
-                    totalDemand += editableActualValues[sku][week] || 0;
-                    count++;
+                if (selectedSKU === 'all-categories') {
+                  Object.keys(editableActualValues).forEach(category => {
+                    Object.keys(editableActualValues[category]).forEach(product => {
+                      totalDemand += editableActualValues[category][product][week] || 0;
+                      count++;
+                    });
                   });
+                } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
+                  const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
+                  if (editableActualValues[categoryName]) {
+                    Object.keys(editableActualValues[categoryName]).forEach(product => {
+                      totalDemand += editableActualValues[categoryName][product][week] || 0;
+                      count++;
+                    });
+                  }
                 } else {
-                  const skuName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                  totalDemand += editableActualValues[skuName][week] || 0;
-                  count++;
+                  const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                  for (const category of Object.keys(editableActualValues)) {
+                    if (editableActualValues[category][productName]) {
+                      totalDemand += editableActualValues[category][productName][week] || 0;
+                      count++;
+                    }
+                  }
                 }
               });
             }
+            
             if (!stock || stock === 0) {
-              stock = selectedSKU === 'all-skus' ? 15000
+              stock = selectedSKU === 'all-categories' ? 15000
+                : selectedSKU === 'pistakios' ? 9750
+                : selectedSKU === 'almonds' ? 5250
                 : selectedSKU === 'pistakio-classic' ? 6581
                 : selectedSKU === 'pistakio-salted' ? 3638
-                : 2811;
-              totalDemand = selectedSKU === 'all-skus' ? 2500 * 4
-                : selectedSKU === 'pistakio-classic' ? 332 * 4
-                : selectedSKU === 'pistakio-salted' ? 183 * 4
-                : 142 * 4;
+                : selectedSKU === 'pistakio-chocolate' ? 2811
+                : selectedSKU === 'almond-classic' ? 4437
+                : selectedSKU === 'almond-honey' ? 3393
+                : 2500;
+              
+              totalDemand = selectedSKU === 'all-categories' ? 1465 * 4
+                : selectedSKU === 'pistakios' ? 850 * 4
+                : selectedSKU === 'almonds' ? 385 * 4
+                : selectedSKU === 'pistakio-classic' ? 346 * 4
+                : selectedSKU === 'pistakio-salted' ? 192 * 4
+                : selectedSKU === 'pistakio-chocolate' ? 154 * 4
+                : selectedSKU === 'almond-classic' ? 238 * 4
+                : selectedSKU === 'almond-honey' ? 172 * 4
+                : 200 * 4;
               count = 4;
             }
             const avgDemand = count > 0 ? totalDemand / count : 1;
@@ -505,17 +746,34 @@ export default function SalesForecastPage() {
           title='Finished Goods Stock'
           value={(() => {
             if (editableActualValues && Object.keys(editableActualValues).length > 0) {
-              if (selectedSKU === 'all-skus') {
-                return Object.keys(editableActualValues).reduce((sum, sku) => sum + (editableActualValues[sku]['w36'] || 0), 0).toLocaleString();
+              if (selectedSKU === 'all-categories') {
+                return Object.keys(editableActualValues).reduce((sum, category) => 
+                  sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => 
+                    categorySum + (editableActualValues[category][product]['w36'] || 0), 0), 0).toLocaleString();
+              } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
+                const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
+                if (editableActualValues[categoryName]) {
+                  return Object.keys(editableActualValues[categoryName]).reduce((sum, product) => 
+                    sum + (editableActualValues[categoryName][product]['w36'] || 0), 0).toLocaleString();
+                }
               } else {
-                const skuName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                return (editableActualValues[skuName]?.['w36'] || 0).toLocaleString();
+                const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                for (const category of Object.keys(editableActualValues)) {
+                  if (editableActualValues[category][productName]) {
+                    return (editableActualValues[category][productName]['w36'] || 0).toLocaleString();
+                  }
+                }
               }
             }
-            return selectedSKU === 'all-skus' ? '15,000'
+            return selectedSKU === 'all-categories' ? '15,000'
+              : selectedSKU === 'pistakios' ? '9,750'
+              : selectedSKU === 'almonds' ? '5,250'
               : selectedSKU === 'pistakio-classic' ? '6,581'
               : selectedSKU === 'pistakio-salted' ? '3,638'
-              : '2,811';
+              : selectedSKU === 'pistakio-chocolate' ? '2,811'
+              : selectedSKU === 'almond-classic' ? '4,437'
+              : selectedSKU === 'almond-honey' ? '3,393'
+              : '2,500';
           })()}
           subtitle='$105,000'
           borderColor='blue'
@@ -526,26 +784,56 @@ export default function SalesForecastPage() {
             // Suma de forecast de W37-W40
             let forecast = 0;
             let multiplier = 1;
-            if (selectedSKU === 'pistakio-classic') multiplier = 0.45;
-            else if (selectedSKU === 'pistakio-salted') multiplier = 0.28;
-            else if (selectedSKU === 'pistakio-chocolate') multiplier = 0.27;
+            
+            // Ajustar multiplicadores para la nueva estructura
+            if (selectedSKU === 'pistakios') multiplier = 0.65;
+            else if (selectedSKU === 'almonds') multiplier = 0.35;
+            else if (selectedSKU === 'pistakio-classic') multiplier = 0.30;
+            else if (selectedSKU === 'pistakio-salted') multiplier = 0.18;
+            else if (selectedSKU === 'pistakio-chocolate') multiplier = 0.17;
+            else if (selectedSKU === 'almond-classic') multiplier = 0.22;
+            else if (selectedSKU === 'almond-honey') multiplier = 0.13;
+            
             if (selectedChannel !== 'all-channels') {
               if (selectedChannel === 'retail') multiplier *= 0.6;
               else if (selectedChannel === 'online') multiplier *= 0.3;
               else if (selectedChannel === 'wholesale') multiplier *= 0.1;
             }
+            
             // Usar forecast base de la última semana editable
             let base = 0;
             if (editableActualValues && Object.keys(editableActualValues).length > 0) {
-              if (selectedSKU === 'all-skus') {
-                base = Object.keys(editableActualValues).reduce((sum, sku) => sum + (editableActualValues[sku]['w36'] || 0), 0);
+              if (selectedSKU === 'all-categories') {
+                base = Object.keys(editableActualValues).reduce((sum, category) => 
+                  sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => 
+                    categorySum + (editableActualValues[category][product]['w36'] || 0), 0), 0);
+              } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
+                const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
+                if (editableActualValues[categoryName]) {
+                  base = Object.keys(editableActualValues[categoryName]).reduce((sum, product) => 
+                    sum + (editableActualValues[categoryName][product]['w36'] || 0), 0);
+                }
               } else {
-                const skuName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                base = editableActualValues[skuName]['w36'] || 0;
+                const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                for (const category of Object.keys(editableActualValues)) {
+                  if (editableActualValues[category][productName]) {
+                    base = editableActualValues[category][productName]['w36'] || 0;
+                    break;
+                  }
+                }
               }
             } else {
-              base = selectedSKU === 'all-skus' ? 412 : selectedSKU === 'pistakio-classic' ? 346 : selectedSKU === 'pistakio-salted' ? 192 : 154;
+              base = selectedSKU === 'all-categories' ? 1102
+                : selectedSKU === 'pistakios' ? 692
+                : selectedSKU === 'almonds' ? 410
+                : selectedSKU === 'pistakio-classic' ? 346
+                : selectedSKU === 'pistakio-salted' ? 192
+                : selectedSKU === 'pistakio-chocolate' ? 154
+                : selectedSKU === 'almond-classic' ? 238
+                : selectedSKU === 'almond-honey' ? 172
+                : 200;
             }
+            
             for (let i = 1; i <= 4; i++) {
               forecast += Math.round(base * multiplier);
             }
@@ -698,91 +986,178 @@ export default function SalesForecastPage() {
             <tbody>
               {salesData.map((row, index) => (
                 <React.Fragment key={index}>
-                  {/* Fila Actual */}
-                  <tr className='hover:bg-gray-25 border-b border-gray-100 transition-colors'>
-                    <td
-                      rowSpan='2'
-                      className='w-40 border-r border-gray-200 px-4 py-4 align-middle font-medium text-gray-900'
-                    >
-                      <div className='flex items-center gap-2'>
-                        {row.sku}
-                        {selectedSKU ===
-                          row.sku.toLowerCase().replace(' ', '-') && (
-                          <div className='h-2 w-2 rounded-full bg-blue-500' />
-                        )}
-                      </div>
-                    </td>
-                    <td className='w-20 px-4 py-2 text-center'>
-                      <span className='rounded-lg bg-blue-50 px-4 py-1 text-sm font-medium text-blue-600'>
-                        Actual
-                      </span>
-                    </td>
-                    <td className='px-4 py-2 text-center'>
-                      <EditableCell
-                        value={editableActualValues[row.sku]?.w33 || row.w33.actual}
-                        onChange={(value) => handleActualValueChange(row.sku, 'w33', value)}
-                        type='actual'
-                      />
-                    </td>
-                    <td className='px-4 py-2 text-center'>
-                      <EditableCell
-                        value={editableActualValues[row.sku]?.w34 || row.w34.actual}
-                        onChange={(value) => handleActualValueChange(row.sku, 'w34', value)}
-                        type='actual'
-                      />
-                    </td>
-                    <td className='px-4 py-2 text-center'>
-                      <EditableCell
-                        value={editableActualValues[row.sku]?.w35 || row.w35.actual}
-                        onChange={(value) => handleActualValueChange(row.sku, 'w35', value)}
-                        type='actual'
-                      />
-                    </td>
-                    <td className='px-4 py-2 text-center'>
-                      <EditableCell
-                        value={editableActualValues[row.sku]?.w36 || row.w36.forecast}
-                        onChange={(value) => handleActualValueChange(row.sku, 'w36', value)}
-                        type='actual'
-                      />
-                    </td>
-                  </tr>
+                  {row.type === 'category' ? (
+                    // Filas de Categoría
+                    <>
+                      {/* Fila Actual de Categoría */}
+                      <tr className='hover:bg-blue-25 border-b border-gray-100 transition-colors bg-blue-50'>
+                        <td
+                          rowSpan='2'
+                          className='w-40 border-r border-gray-200 px-4 py-4 align-middle font-bold text-blue-900'
+                        >
+                          <div className='flex items-center gap-2'>
+                            <button
+                              onClick={() => toggleCategoryExpansion(row.name)}
+                              className='flex items-center gap-1 hover:bg-blue-100 p-1 rounded'
+                            >
+                              {row.isExpanded ? (
+                                <ChevronDown className='h-4 w-4' />
+                              ) : (
+                                <ChevronRight className='h-4 w-4' />
+                              )}
+                              {row.name}
+                            </button>
+                            {(selectedSKU === row.name.toLowerCase()) && (
+                              <div className='h-2 w-2 rounded-full bg-blue-500' />
+                            )}
+                          </div>
+                        </td>
+                        <td className='w-20 px-4 py-2 text-center'>
+                          <span className='rounded-lg bg-blue-100 px-4 py-1 text-sm font-bold text-blue-700'>
+                            Actual
+                          </span>
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <div className='font-bold text-blue-700'>
+                            {row.w33.actual}
+                          </div>
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <div className='font-bold text-blue-700'>
+                            {row.w34.actual}
+                          </div>
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <div className='font-bold text-blue-700'>
+                            {row.w35.actual}
+                          </div>
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <div className='font-bold text-blue-700'>
+                            {row.w36.forecast}
+                          </div>
+                        </td>
+                      </tr>
 
-                  {/* Fila Plan */}
-                  <tr className='border-b border-gray-100 transition-colors hover:bg-gray-50'>
-                    <td className='px-4 py-2 text-center'>
-                      <span className='rounded-lg bg-orange-50 px-4 py-1 text-sm font-medium text-orange-600'>
-                        Plan
-                      </span>
-                    </td>
-                    <td className='px-4 py-2 text-center'>
-                      <EditableCell
-                        value={editablePlanValues[row.sku]?.w33 || Math.round(row.w33.actual * 1.2)}
-                        onChange={(value) => handlePlanValueChange(row.sku, 'w33', value)}
-                        type='plan'
-                      />
-                    </td>
-                    <td className='px-4 py-2 text-center'>
-                      <EditableCell
-                        value={editablePlanValues[row.sku]?.w34 || Math.round(row.w34.actual * 1.2)}
-                        onChange={(value) => handlePlanValueChange(row.sku, 'w34', value)}
-                        type='plan'
-                      />
-                    </td>
-                    <td className='px-4 py-2 text-center'>
-                      <EditableCell
-                        value={editablePlanValues[row.sku]?.w35 || Math.round(row.w35.actual * 1.2)}
-                        onChange={(value) => handlePlanValueChange(row.sku, 'w35', value)}
-                        type='plan'
-                      />
-                    </td>
-                    <td className='px-4 py-2 text-center'>
-                      <EditableCell
-                        value={editablePlanValues[row.sku]?.w36 || Math.round(row.w36.forecast * 1.2)}
-                        onChange={(value) => handlePlanValueChange(row.sku, 'w36', value)}
-                        type='plan'
-                      />
-                    </td>
-                  </tr>
+                      {/* Fila Plan de Categoría */}
+                      <tr className='border-b-2 border-blue-200 transition-colors bg-orange-50 hover:bg-orange-75'>
+                        <td className='px-4 py-2 text-center'>
+                          <span className='rounded-lg bg-orange-100 px-4 py-1 text-sm font-bold text-orange-700'>
+                            Plan
+                          </span>
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <div className='font-bold text-orange-700'>
+                            {row.w33.plan}
+                          </div>
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <div className='font-bold text-orange-700'>
+                            {row.w34.plan}
+                          </div>
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <div className='font-bold text-orange-700'>
+                            {row.w35.plan}
+                          </div>
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <div className='font-bold text-orange-700'>
+                            {row.w36.planForecast}
+                          </div>
+                        </td>
+                      </tr>
+                    </>
+                  ) : (
+                    // Filas de Producto (cuando la categoría está expandida)
+                    <>
+                      {/* Fila Actual de Producto */}
+                      <tr className='hover:bg-gray-25 border-b border-gray-100 transition-colors'>
+                        <td
+                          rowSpan='2'
+                          className='w-40 border-r border-gray-200 px-4 py-4 align-middle font-medium text-gray-900 pl-8'
+                        >
+                          <div className='flex items-center gap-2'>
+                            <span className='text-gray-400'>└</span>
+                            {row.name}
+                            {selectedSKU === row.name.toLowerCase().replace(' ', '-') && (
+                              <div className='h-2 w-2 rounded-full bg-blue-500' />
+                            )}
+                          </div>
+                        </td>
+                        <td className='w-20 px-4 py-2 text-center'>
+                          <span className='rounded-lg bg-blue-50 px-4 py-1 text-sm font-medium text-blue-600'>
+                            Actual
+                          </span>
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <EditableCell
+                            value={row.w33.actual}
+                            onChange={(value) => handleActualValueChange(row.category, row.name, 'w33', value)}
+                            type='actual'
+                          />
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <EditableCell
+                            value={row.w34.actual}
+                            onChange={(value) => handleActualValueChange(row.category, row.name, 'w34', value)}
+                            type='actual'
+                          />
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <EditableCell
+                            value={row.w35.actual}
+                            onChange={(value) => handleActualValueChange(row.category, row.name, 'w35', value)}
+                            type='actual'
+                          />
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <EditableCell
+                            value={row.w36.forecast}
+                            onChange={(value) => handleActualValueChange(row.category, row.name, 'w36', value)}
+                            type='actual'
+                          />
+                        </td>
+                      </tr>
+
+                      {/* Fila Plan de Producto */}
+                      <tr className='border-b border-gray-100 transition-colors hover:bg-gray-50'>
+                        <td className='px-4 py-2 text-center'>
+                          <span className='rounded-lg bg-orange-50 px-4 py-1 text-sm font-medium text-orange-600'>
+                            Plan
+                          </span>
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <EditableCell
+                            value={row.w33.plan}
+                            onChange={(value) => handlePlanValueChange(row.category, row.name, 'w33', value)}
+                            type='plan'
+                          />
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <EditableCell
+                            value={row.w34.plan}
+                            onChange={(value) => handlePlanValueChange(row.category, row.name, 'w34', value)}
+                            type='plan'
+                          />
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <EditableCell
+                            value={row.w35.plan}
+                            onChange={(value) => handlePlanValueChange(row.category, row.name, 'w35', value)}
+                            type='plan'
+                          />
+                        </td>
+                        <td className='px-4 py-2 text-center'>
+                          <EditableCell
+                            value={row.w36.planForecast}
+                            onChange={(value) => handlePlanValueChange(row.category, row.name, 'w36', value)}
+                            type='plan'
+                          />
+                        </td>
+                      </tr>
+                    </>
+                  )}
                 </React.Fragment>
               ))}
               {/* Fila del Balance de Productos Terminados */}
@@ -805,8 +1180,9 @@ export default function SalesForecastPage() {
                     {calculateFinishedGoodsBalance('w33').toLocaleString()}
                   </div>
                   <div className='text-xs text-gray-500 mt-1'>
-                    -{Object.keys(editableActualValues).reduce((sum, sku) => 
-                      sum + (editableActualValues[sku]['w33'] || 0), 0).toLocaleString()} sold
+                    -{Object.keys(editableActualValues).reduce((sum, category) => 
+                      sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => 
+                        categorySum + (editableActualValues[category][product]['w33'] || 0), 0), 0).toLocaleString()} sold
                   </div>
                 </td>
                 <td className='px-4 py-4 text-center'>
@@ -814,8 +1190,9 @@ export default function SalesForecastPage() {
                     {calculateFinishedGoodsBalance('w34').toLocaleString()}
                   </div>
                   <div className='text-xs text-gray-500 mt-1'>
-                    -{Object.keys(editableActualValues).reduce((sum, sku) => 
-                      sum + (editableActualValues[sku]['w34'] || 0), 0).toLocaleString()} sold
+                    -{Object.keys(editableActualValues).reduce((sum, category) => 
+                      sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => 
+                        categorySum + (editableActualValues[category][product]['w34'] || 0), 0), 0).toLocaleString()} sold
                   </div>
                 </td>
                 <td className='px-4 py-4 text-center'>
@@ -823,8 +1200,9 @@ export default function SalesForecastPage() {
                     {calculateFinishedGoodsBalance('w35').toLocaleString()}
                   </div>
                   <div className='text-xs text-gray-500 mt-1'>
-                    -{Object.keys(editableActualValues).reduce((sum, sku) => 
-                      sum + (editableActualValues[sku]['w35'] || 0), 0).toLocaleString()} sold
+                    -{Object.keys(editableActualValues).reduce((sum, category) => 
+                      sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => 
+                        categorySum + (editableActualValues[category][product]['w35'] || 0), 0), 0).toLocaleString()} sold
                   </div>
                 </td>
                 <td className='px-4 py-4 text-center'>
@@ -832,8 +1210,9 @@ export default function SalesForecastPage() {
                     {calculateFinishedGoodsBalance('w36').toLocaleString()}
                   </div>
                   <div className='text-xs text-gray-500 mt-1'>
-                    -{Object.keys(editableActualValues).reduce((sum, sku) => 
-                      sum + (editableActualValues[sku]['w36'] || 0), 0).toLocaleString()} sold
+                    -{Object.keys(editableActualValues).reduce((sum, category) => 
+                      sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => 
+                        categorySum + (editableActualValues[category][product]['w36'] || 0), 0), 0).toLocaleString()} sold
                   </div>
                 </td>
               </tr>
