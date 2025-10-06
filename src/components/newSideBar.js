@@ -9,7 +9,6 @@ import {
   TrendingUp,
   Factory,
   Settings,
-  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/utils/tailwind';
 
@@ -17,6 +16,7 @@ const navigation = [
   { name: 'Ask AI', href: '/ask-ai', icon: MessageCircle },
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Documents', href: '/documents', icon: FileText },
+  { name: "Vendors", href: '/vendors', icon: Factory },
 ];
 
 const operations = [

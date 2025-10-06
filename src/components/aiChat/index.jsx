@@ -13,6 +13,7 @@ import {
 } from '@/actions/chatsActions';
 import { generateAIResponseAction } from '@/actions/aiActions';
 import { resetChatSupabase } from '@/actions/chatsActions';
+import { getVendors } from '@/actions/getVendors';
 
 const suggestions = [
   'Why did this margin drop?',
@@ -26,6 +27,8 @@ const AiChat = ({ documents = [], loadingDocs = false }) => {
   const [selectedDocId, setSelectedDocId] = useState(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isAttachingVendors, setIsAttachingVendors] = useState(false);
+  const [vendorsData, setVendorsData] = useState(null);
   // Buscar el documento completo (con todos los campos) si existe
   const selectedDoc = documents.find((doc) => doc.id === selectedDocId);
   const [message, setMessage] = useState('');
@@ -61,11 +64,35 @@ const AiChat = ({ documents = [], loadingDocs = false }) => {
     if (!message.trim() || isLoadingAI) return;
     setIsLoadingAI(true);
 
+    // Detectar si el mensaje menciona "vendor" en múltiples idiomas
+    // Inglés: vendor(s), supplier(s), provider(s)
+    // Español: proveedor(es), provedor(es), vendedor(es)
+    // Portugués: fornecedor(es), vendedor(es)
+    // Francés: fournisseur(s), vendeur(s)
+    // Italiano: fornitore(i), venditore(i)
+    // Alemán: lieferant(en), anbieter
+    const vendorKeywords = /vendor(e)?s?|supplier(s)?|provider(s)?|prove[e]?dor(es)?|vendedor(es)?|fornecedor(es)?|fournisseur(s)?|vendeur(s)?|fornitore(i)?|venditore(i)?|lieferant(en)?|anbieter/i;
+    const mentionsVendors = vendorKeywords.test(message);
+    let attachedVendors = null;
+
+    if (mentionsVendors) {
+      setIsAttachingVendors(true);
+      try {
+        const vendors = await getVendors();
+        attachedVendors = vendors;
+        setVendorsData(vendors);
+      } catch (error) {
+        console.error('Error fetching vendors:', error);
+      }
+      setIsAttachingVendors(false);
+    }
+
     const userMessage = {
       type: 'user',
       message: message,
       timestamp: new Date(),
       document: selectedDoc ? { ...selectedDoc } : null,
+      vendorsTable: attachedVendors,
     };
 
     // Update local state with user message
@@ -288,6 +315,14 @@ const AiChat = ({ documents = [], loadingDocs = false }) => {
                       <span className='font-semibold'>Document:</span> {chat.document.name} <span className='text-gray-500'>({chat.document.type})</span>
                     </div>
                   )}
+                  {chat.vendorsTable && (
+                    <div className='mt-2 text-xs text-purple-900 bg-purple-50 rounded px-2 py-1 flex items-center gap-1'>
+                      <svg className='w-3 h-3' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
+                      </svg>
+                      <span className='font-semibold'>Vendors Table:</span> {chat.vendorsTable.length} vendors attached
+                    </div>
+                  )}
                   <p className='mt-1 text-xs opacity-70'>
                     {chat.timestamp
                       ? new Date(chat.timestamp).toLocaleTimeString()
@@ -300,6 +335,15 @@ const AiChat = ({ documents = [], loadingDocs = false }) => {
 
           {/* Message Input */}
           <div className='border-t p-4'>
+            {isAttachingVendors && (
+              <div className='mb-2 text-xs text-purple-700 bg-purple-50 rounded px-3 py-2 flex items-center gap-2'>
+                <svg className='animate-spin h-3 w-3 text-purple-700' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'>
+                  <circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4'></circle>
+                  <path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8v8z'></path>
+                </svg>
+                Attaching vendors table to your question...
+              </div>
+            )}
             <div className='flex gap-2'>
               <Input
                 placeholder={selectedDoc ? `Ask about: ${selectedDoc.name}` : 'Ask a question about your margins...'}
@@ -307,7 +351,7 @@ const AiChat = ({ documents = [], loadingDocs = false }) => {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 className='flex-1'
-                disabled={isLoadingAI || isResetting || loadingDocs || (showDocs && !selectedDocId)}
+                disabled={isLoadingAI || isResetting || loadingDocs || (showDocs && !selectedDocId) || isAttachingVendors}
               />
               <Button
                 onClick={handleSendMessage}

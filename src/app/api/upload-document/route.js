@@ -1,6 +1,6 @@
 import { uploadDocumentSupabaseRouteHandler } from '@/utils/supabase/uploadDocumentRouteHandler';
 
-export const runtime = 'nodejs'; // Asegura que se use Node para acceso a streams
+export const runtime = 'nodejs';
 
 export async function POST(req) {
   try {

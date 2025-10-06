@@ -7,8 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Play, RotateCcw, TrendingUp, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -21,6 +20,7 @@ import {
 } from 'recharts';
 import MetricCard from '@/components/metricCard';
 import AIAssistantTrigger from '@/components/aiChat/ai-assistant-trigger';
+import { DateRangePicker } from '@heroui/date-picker';
 
 const baseChartData = [
   { week: 'W33', demand: 2500, finishedGoods: 15000 },
@@ -75,7 +75,11 @@ const baseCategoriesData = {
 export default function SalesForecastPage() {
   const [selectedSKU, setSelectedSKU] = useState('all-categories');
   const [selectedChannel, setSelectedChannel] = useState('all-channels');
-  const [weekRange, setWeekRange] = useState('4w');
+  // Backing week range derived from date picker (defaults show W33–W38)
+  const [weekStart, setWeekStart] = useState(33);
+  const [weekEnd, setWeekEnd] = useState(38);
+  // Date range from DayPicker
+  const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
   const [forecastAdjustment, setForecastAdjustment] = useState([0]);
   const [chartData, setChartData] = useState(baseChartData);
   const [salesData, setSalesData] = useState([]);
@@ -209,42 +213,50 @@ export default function SalesForecastPage() {
     
     return calculateFinishedGoodsBalanceRaw(week, multiplier);
   };
-
-  const getFilteredChartData = (data, range) => {
-    if (range === '4w') {
-      return data.slice(0, 6); // W33-W38 (4 semanas históricas + 2 forecast)
-    } else if (range === '8w') {
-      // Extender datos para 8 semanas
-      const extendedData = [...data];
-      for (let i = 39; i <= 42; i++) {
-        extendedData.push({
-          week: `W${i}`,
-          demand: null,
-          finishedGoods: null,
-          forecast: Math.round(2600 + (i - 37) * 50),
-        });
-      }
-      return extendedData;
-    } else if (range === '12w') {
-      // Extender datos para 12 semanas
-      const extendedData = [...data];
-      for (let i = 39; i <= 46; i++) {
-        extendedData.push({
-          week: `W${i}`,
-          demand: null,
-          finishedGoods: null,
-          forecast: Math.round(2600 + (i - 37) * 50),
-        });
-      }
-      return extendedData;
-    }
-    return data;
+  
+  // ---------- Week helpers for dynamic range ----------
+  const WEEK_MIN = 33;
+  const WEEK_MAX = 46;
+  const toWeekKey = (n) => `w${n}`;
+  const toWeekLabel = (n) => `W${n}`;
+  const clampWeek = (n) => Math.max(WEEK_MIN, Math.min(WEEK_MAX, n));
+  const generateWeekNumbers = (start, end) => {
+    const s = clampWeek(Math.min(start, end));
+    const e = clampWeek(Math.max(start, end));
+    return Array.from({ length: e - s + 1 }, (_, i) => s + i);
+  };
+  // Keep simple week clamp and range generation
+  // ISO week number (1-53)
+  const getISOWeek = (d) => {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const day = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+    return weekNo;
   };
 
   // Efecto para marcar cuando el componente se hidrata
   useEffect(() => {
     setIsHydrated(true);
   }, []);
+
+  // No popover handlers needed with HeroUI component
+
+  // Update weeks when calendar range changes
+  useEffect(() => {
+    if (dateRange?.from && dateRange?.to) {
+      const ws = clampWeek(getISOWeek(dateRange.from));
+      const we = clampWeek(getISOWeek(dateRange.to));
+      setWeekStart(Math.min(ws, we));
+      setWeekEnd(Math.max(ws, we));
+    }
+  }, [dateRange]);
+
+  // Ensure weekEnd is always >= weekStart
+  useEffect(() => {
+    if (weekEnd < weekStart) setWeekEnd(weekStart);
+  }, [weekStart, weekEnd]);
 
   // Actualizar datos cuando cambian los filtros o valores editables
   useEffect(() => {
@@ -265,96 +277,77 @@ export default function SalesForecastPage() {
         else if (selectedChannel === 'wholesale') multiplier *= 0.1;
       }
 
-      // Obtener datos filtrados por rango de semanas
-      const baseData = getFilteredChartData(baseChartData, weekRange);
+      // Build chart data for selected week range (defaults to 33–38)
+      const weeks = generateWeekNumbers(weekStart, weekEnd);
 
-      // Mapeo de semanas: posiciones 0-3 del chart corresponden a las semanas W33-W36 de la tabla
-      const weekMapping = { 0: 'w33', 1: 'w34', 2: 'w35', 3: 'w36' };
+      // Forecast base uses W36 values
+      let forecastBase = 0;
+      if (selectedSKU === 'all-categories') {
+        forecastBase = Object.keys(editableActualValues).reduce((sum, category) => {
+          return sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => {
+            return categorySum + (editableActualValues[category][product]['w36'] || 0);
+          }, 0);
+        }, 0);
+      } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
+        const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
+        if (editableActualValues[categoryName]) {
+          forecastBase = Object.keys(editableActualValues[categoryName]).reduce((sum, product) => {
+            return sum + (editableActualValues[categoryName][product]['w36'] || 0);
+          }, 0);
+        }
+      } else {
+        const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+        Object.keys(editableActualValues).forEach(category => {
+          if (editableActualValues[category][productName]) {
+            forecastBase = editableActualValues[category][productName]['w36'] || 0;
+          }
+        });
+      }
 
-      // Actualizar chart data con valores reales de la tabla
-      const newChartData = baseData.map((item, index) => {
-        if (index < 4) {
-          // Para las primeras 4 semanas (W33-W36), usar los valores editables actuales
+      const newChartData = weeks.map((wn) => {
+        const label = toWeekLabel(wn);
+        const key = toWeekKey(wn);
+        const withinActuals = wn >= 33 && wn <= 36;
+
+        if (withinActuals) {
           let weekDemand = 0;
-          
           if (selectedSKU === 'all-categories') {
-            // Sumar todas las categorías y productos
             weekDemand = Object.keys(editableActualValues).reduce((sum, category) => {
               return sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => {
-                const weekKey = weekMapping[index];
-                return categorySum + (editableActualValues[category][product][weekKey] || 0);
+                return categorySum + (editableActualValues[category][product][key] || 0);
               }, 0);
             }, 0);
           } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
-            // Sumar una categoría completa
             const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
             if (editableActualValues[categoryName]) {
               weekDemand = Object.keys(editableActualValues[categoryName]).reduce((sum, product) => {
-                const weekKey = weekMapping[index];
-                return sum + (editableActualValues[categoryName][product][weekKey] || 0);
+                return sum + (editableActualValues[categoryName][product][key] || 0);
               }, 0);
             }
           } else {
-            // Usar un producto específico
-            const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-            const weekKey = weekMapping[index];
-            
-            // Buscar el producto en todas las categorías
-            let found = false;
-            Object.keys(editableActualValues).forEach(category => {
-              if (editableActualValues[category][productName]) {
-                weekDemand = editableActualValues[category][productName][weekKey] || 0;
-                found = true;
-              }
-            });
-          }
-          
-          // Calcular finished goods usando la misma función que la tabla
-          const weekKeys = ['w33', 'w34', 'w35', 'w36'];
-          const currentWeek = weekKeys[index];
-          const finishedGoodsBalance = calculateFinishedGoodsBalanceRaw(currentWeek, multiplier);
-          
-          return {
-            ...item,
-            demand: Math.round(weekDemand * multiplier),
-            finishedGoods: finishedGoodsBalance,
-          };
-        } else {
-          // Para forecast (W5 en adelante), usar el valor W36 como base + ajuste del slider
-          let forecastBase = 0;
-          
-          if (selectedSKU === 'all-categories') {
-            // Usar W36 como base para forecast de todas las categorías
-            forecastBase = Object.keys(editableActualValues).reduce((sum, category) => {
-              return sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => {
-                return categorySum + (editableActualValues[category][product]['w36'] || 0);
-              }, 0);
-            }, 0);
-          } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
-            // Usar W36 de una categoría completa
-            const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
-            if (editableActualValues[categoryName]) {
-              forecastBase = Object.keys(editableActualValues[categoryName]).reduce((sum, product) => {
-                return sum + (editableActualValues[categoryName][product]['w36'] || 0);
-              }, 0);
-            }
-          } else {
-            // Usar W36 de un producto específico
             const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
             Object.keys(editableActualValues).forEach(category => {
               if (editableActualValues[category][productName]) {
-                forecastBase = editableActualValues[category][productName]['w36'] || 0;
+                weekDemand = editableActualValues[category][productName][key] || 0;
               }
             });
           }
 
+          const finishedGoodsBalance = calculateFinishedGoodsBalanceRaw(key, multiplier);
           return {
-            ...item,
-            demand: null,
-            finishedGoods: null,
-            forecast: Math.round(forecastBase * multiplier * (1 + forecastAdjustment[0] / 100)),
+            week: label,
+            demand: Math.round(weekDemand * multiplier),
+            finishedGoods: finishedGoodsBalance,
+            forecast: null,
           };
         }
+
+        return {
+          week: label,
+          demand: null,
+          finishedGoods: null,
+          forecast: Math.round(forecastBase * multiplier * (1 + forecastAdjustment[0] / 100)),
+        };
       });
 
       // Crear sales data con estructura de categorías
@@ -441,7 +434,7 @@ export default function SalesForecastPage() {
     };
 
     updateData();
-  }, [selectedSKU, selectedChannel, forecastAdjustment, weekRange, editableActualValues, editablePlanValues, isHydrated, expandedCategories]);
+  }, [selectedSKU, selectedChannel, forecastAdjustment, weekStart, weekEnd, editableActualValues, editablePlanValues, isHydrated, expandedCategories]);
 
   const getDaysOfCover = () => {
     const currentStock =
@@ -619,18 +612,35 @@ export default function SalesForecastPage() {
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <label className='mb-2 block text-sm text-gray-500'>Week Range</label>
-          <Select value={weekRange} onValueChange={setWeekRange}>
-            <SelectTrigger className='w-24'>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className='bg-white'>
-              <SelectItem value='4w'>4w</SelectItem>
-              <SelectItem value='8w'>8w</SelectItem>
-              <SelectItem value='12w'>12w</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className='min-w-[280px]'>
+          <label className='mb-2 block text-sm text-gray-500'>Date Range</label>
+          <DateRangePicker
+            className='w-full'
+            selectionMode='range'
+            placeholder='Select date range'
+            classNames={{
+              calendar: 'border border-gray-300',
+              calendarContent : 'bg-white',
+              separator: 'mx-2 text-gray-500',
+            }}
+            visibleMonths={2}
+            showMonthAndYearPickers
+            onChange={(val) => {
+              // val has { start, end } as CalendarDate from @internationalized/date
+              // Convert to JS Date for our ISO week mapping
+              const toJS = (cd) => {
+                if (!cd) return undefined;
+                // CalendarDate has .year, .month, .day (1-based month)
+                return new Date(cd.year, cd.month - 1, cd.day);
+              };
+              const from = toJS(val?.start);
+              const to = toJS(val?.end);
+              setDateRange({ from, to });
+            }}
+          />
+          <div className='mt-1 text-xs text-gray-500'>
+            Weeks {toWeekLabel(weekStart)} – {toWeekLabel(weekEnd)}
+          </div>
         </div>
         {/* Forecast Adjustment slider eliminado */}
       </div>
@@ -640,110 +650,55 @@ export default function SalesForecastPage() {
       {/* Metrics Grid */}
       <div className='mb-8 grid grid-cols-1 gap-6 md:grid-cols-3'>
         <MetricCard
-          title='Days of Cover'
+          title='Revenue'
           value={(() => {
-            // Stock actual = balance de W36 (dinámico) o valor estático
-            let stock;
-            let totalDemand = 0;
-            let count = 0;
-            const weeks = ['w33', 'w34', 'w35', 'w36'];
+            let totalRevenue = 0;
+            let baseUnits = 0;
             
             if (editableActualValues && Object.keys(editableActualValues).length > 0) {
-              stock = (() => {
-                try {
-                  if (selectedSKU === 'all-categories') {
-                    return Object.keys(editableActualValues).reduce((sum, category) => 
-                      sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => 
-                        categorySum + (editableActualValues[category][product]['w36'] || 0), 0), 0);
-                  } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
-                    const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
-                    if (editableActualValues[categoryName]) {
-                      return Object.keys(editableActualValues[categoryName]).reduce((sum, product) => 
-                        sum + (editableActualValues[categoryName][product]['w36'] || 0), 0);
-                    }
-                  } else {
-                    const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    for (const category of Object.keys(editableActualValues)) {
-                      if (editableActualValues[category][productName]) {
-                        return editableActualValues[category][productName]['w36'] || 0;
-                      }
-                    }
-                  }
-                  return 0;
-                } catch { return undefined; }
-              })();
-              
-              weeks.forEach(week => {
-                if (selectedSKU === 'all-categories') {
-                  Object.keys(editableActualValues).forEach(category => {
-                    Object.keys(editableActualValues[category]).forEach(product => {
-                      totalDemand += editableActualValues[category][product][week] || 0;
-                      count++;
-                    });
-                  });
-                } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
-                  const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
-                  if (editableActualValues[categoryName]) {
-                    Object.keys(editableActualValues[categoryName]).forEach(product => {
-                      totalDemand += editableActualValues[categoryName][product][week] || 0;
-                      count++;
-                    });
-                  }
-                } else {
-                  const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                  for (const category of Object.keys(editableActualValues)) {
-                    if (editableActualValues[category][productName]) {
-                      totalDemand += editableActualValues[category][productName][week] || 0;
-                      count++;
-                    }
+              if (selectedSKU === 'all-categories') {
+                baseUnits = Object.keys(editableActualValues).reduce((sum, category) => 
+                  sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => 
+                    categorySum + (editableActualValues[category][product]['w36'] || 0), 0), 0);
+              } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
+                const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
+                if (editableActualValues[categoryName]) {
+                  baseUnits = Object.keys(editableActualValues[categoryName]).reduce((sum, product) => 
+                    sum + (editableActualValues[categoryName][product]['w36'] || 0), 0);
+                }
+              } else {
+                const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                for (const category of Object.keys(editableActualValues)) {
+                  if (editableActualValues[category][productName]) {
+                    baseUnits = editableActualValues[category][productName]['w36'] || 0;
+                    break;
                   }
                 }
-              });
+              }
+            } else {
+              baseUnits = selectedSKU === 'all-categories' ? 1102
+                : selectedSKU === 'pistakios' ? 692
+                : selectedSKU === 'almonds' ? 410
+                : selectedSKU === 'pistakio-classic' ? 346
+                : selectedSKU === 'pistakio-salted' ? 192
+                : selectedSKU === 'pistakio-chocolate' ? 154
+                : selectedSKU === 'almond-classic' ? 238
+                : selectedSKU === 'almond-honey' ? 172
+                : 200;
             }
             
-            if (!stock || stock === 0) {
-              stock = selectedSKU === 'all-categories' ? 15000
-                : selectedSKU === 'pistakios' ? 9750
-                : selectedSKU === 'almonds' ? 5250
-                : selectedSKU === 'pistakio-classic' ? 6581
-                : selectedSKU === 'pistakio-salted' ? 3638
-                : selectedSKU === 'pistakio-chocolate' ? 2811
-                : selectedSKU === 'almond-classic' ? 4437
-                : selectedSKU === 'almond-honey' ? 3393
-                : 2500;
-              
-              totalDemand = selectedSKU === 'all-categories' ? 1465 * 4
-                : selectedSKU === 'pistakios' ? 850 * 4
-                : selectedSKU === 'almonds' ? 385 * 4
-                : selectedSKU === 'pistakio-classic' ? 346 * 4
-                : selectedSKU === 'pistakio-salted' ? 192 * 4
-                : selectedSKU === 'pistakio-chocolate' ? 154 * 4
-                : selectedSKU === 'almond-classic' ? 238 * 4
-                : selectedSKU === 'almond-honey' ? 172 * 4
-                : 200 * 4;
-              count = 4;
-            }
-            const avgDemand = count > 0 ? totalDemand / count : 1;
-            return avgDemand > 0 ? Math.round(stock / avgDemand) : 0;
+            // Average price per unit (based on $121,100 / 4,408 units from original data)
+            const avgPricePerUnit = 27.5;
+            totalRevenue = baseUnits * avgPricePerUnit * 4; // 4 weeks forecast
+            
+            return `$${Math.round(totalRevenue * (1 + forecastAdjustment[0] / 100)).toLocaleString()}`;
           })()}
-          subtitle='Current inventory coverage'
-          borderColor={
-            getDaysOfCover() < 10
-              ? 'red'
-              : getDaysOfCover() < 15
-                ? 'yellow'
-                : 'green'
-          }
-          trend={
-            forecastAdjustment[0] > 0
-              ? -5.2
-              : forecastAdjustment[0] < 0
-                ? 3.1
-                : 0
-          }
+          subtitle='4-week forecast revenue'
+          borderColor='green'
+          trend={forecastAdjustment[0]}
         />
         <MetricCard
-          title='Finished Goods Stock'
+          title='Units'
           value={(() => {
             if (editableActualValues && Object.keys(editableActualValues).length > 0) {
               if (selectedSKU === 'all-categories') {
@@ -765,65 +720,66 @@ export default function SalesForecastPage() {
                 }
               }
             }
-            return selectedSKU === 'all-categories' ? '15,000'
-              : selectedSKU === 'pistakios' ? '9,750'
-              : selectedSKU === 'almonds' ? '5,250'
-              : selectedSKU === 'pistakio-classic' ? '6,581'
-              : selectedSKU === 'pistakio-salted' ? '3,638'
-              : selectedSKU === 'pistakio-chocolate' ? '2,811'
-              : selectedSKU === 'almond-classic' ? '4,437'
-              : selectedSKU === 'almond-honey' ? '3,393'
-              : '2,500';
+            return selectedSKU === 'all-categories' ? '1,102'
+              : selectedSKU === 'pistakios' ? '692'
+              : selectedSKU === 'almonds' ? '410'
+              : selectedSKU === 'pistakio-classic' ? '346'
+              : selectedSKU === 'pistakio-salted' ? '192'
+              : selectedSKU === 'pistakio-chocolate' ? '154'
+              : selectedSKU === 'almond-classic' ? '238'
+              : selectedSKU === 'almond-honey' ? '172'
+              : '200';
           })()}
-          subtitle='$105,000'
+          subtitle='Current weekly forecast'
           borderColor='blue'
         />
         <MetricCard
-          title='Forecasted Sales (4w)'
+          title='Needed Units'
           value={(() => {
-            // Suma de forecast de W37-W40
-            let forecast = 0;
-            let multiplier = 1;
+            // Calculate needed units based on gap between current stock and target coverage
+            let currentStock = 0;
+            let weeklyDemand = 0;
+            let targetCoverage = 14; // target days of coverage
             
-            // Ajustar multiplicadores para la nueva estructura
-            if (selectedSKU === 'pistakios') multiplier = 0.65;
-            else if (selectedSKU === 'almonds') multiplier = 0.35;
-            else if (selectedSKU === 'pistakio-classic') multiplier = 0.30;
-            else if (selectedSKU === 'pistakio-salted') multiplier = 0.18;
-            else if (selectedSKU === 'pistakio-chocolate') multiplier = 0.17;
-            else if (selectedSKU === 'almond-classic') multiplier = 0.22;
-            else if (selectedSKU === 'almond-honey') multiplier = 0.13;
-            
-            if (selectedChannel !== 'all-channels') {
-              if (selectedChannel === 'retail') multiplier *= 0.6;
-              else if (selectedChannel === 'online') multiplier *= 0.3;
-              else if (selectedChannel === 'wholesale') multiplier *= 0.1;
-            }
-            
-            // Usar forecast base de la última semana editable
-            let base = 0;
             if (editableActualValues && Object.keys(editableActualValues).length > 0) {
               if (selectedSKU === 'all-categories') {
-                base = Object.keys(editableActualValues).reduce((sum, category) => 
+                currentStock = 15000; // base stock
+                weeklyDemand = Object.keys(editableActualValues).reduce((sum, category) => 
                   sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => 
                     categorySum + (editableActualValues[category][product]['w36'] || 0), 0), 0);
               } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
+                currentStock = selectedSKU === 'pistakios' ? 9750 : 5250;
                 const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
                 if (editableActualValues[categoryName]) {
-                  base = Object.keys(editableActualValues[categoryName]).reduce((sum, product) => 
+                  weeklyDemand = Object.keys(editableActualValues[categoryName]).reduce((sum, product) => 
                     sum + (editableActualValues[categoryName][product]['w36'] || 0), 0);
                 }
               } else {
+                currentStock = selectedSKU === 'pistakio-classic' ? 6581
+                  : selectedSKU === 'pistakio-salted' ? 3638
+                  : selectedSKU === 'pistakio-chocolate' ? 2811
+                  : selectedSKU === 'almond-classic' ? 4437
+                  : selectedSKU === 'almond-honey' ? 3393
+                  : 2500;
                 const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
                 for (const category of Object.keys(editableActualValues)) {
                   if (editableActualValues[category][productName]) {
-                    base = editableActualValues[category][productName]['w36'] || 0;
+                    weeklyDemand = editableActualValues[category][productName]['w36'] || 0;
                     break;
                   }
                 }
               }
             } else {
-              base = selectedSKU === 'all-categories' ? 1102
+              currentStock = selectedSKU === 'all-categories' ? 15000
+                : selectedSKU === 'pistakios' ? 9750
+                : selectedSKU === 'almonds' ? 5250
+                : selectedSKU === 'pistakio-classic' ? 6581
+                : selectedSKU === 'pistakio-salted' ? 3638
+                : selectedSKU === 'pistakio-chocolate' ? 2811
+                : selectedSKU === 'almond-classic' ? 4437
+                : selectedSKU === 'almond-honey' ? 3393
+                : 2500;
+              weeklyDemand = selectedSKU === 'all-categories' ? 1102
                 : selectedSKU === 'pistakios' ? 692
                 : selectedSKU === 'almonds' ? 410
                 : selectedSKU === 'pistakio-classic' ? 346
@@ -834,14 +790,75 @@ export default function SalesForecastPage() {
                 : 200;
             }
             
-            for (let i = 1; i <= 4; i++) {
-              forecast += Math.round(base * multiplier);
-            }
-            return `${forecast.toLocaleString()} units`;
+            const dailyDemand = weeklyDemand / 7;
+            const targetStock = dailyDemand * targetCoverage;
+            const neededUnits = Math.max(0, Math.round(targetStock - currentStock));
+            
+            return neededUnits.toLocaleString();
           })()}
-          subtitle={`$${Math.round(121100 * (1 + forecastAdjustment[0] / 100)).toLocaleString()}`}
-          borderColor='blue'
-          trend={forecastAdjustment[0]}
+          subtitle='To reach 14-day coverage'
+          borderColor={
+            (() => {
+              // Calculate if we need units based on current coverage
+              let currentStock = 0;
+              let weeklyDemand = 0;
+              
+              if (editableActualValues && Object.keys(editableActualValues).length > 0) {
+                if (selectedSKU === 'all-categories') {
+                  currentStock = 15000;
+                  weeklyDemand = Object.keys(editableActualValues).reduce((sum, category) => 
+                    sum + Object.keys(editableActualValues[category]).reduce((categorySum, product) => 
+                      categorySum + (editableActualValues[category][product]['w36'] || 0), 0), 0);
+                } else if (selectedSKU === 'pistakios' || selectedSKU === 'almonds') {
+                  currentStock = selectedSKU === 'pistakios' ? 9750 : 5250;
+                  const categoryName = selectedSKU.charAt(0).toUpperCase() + selectedSKU.slice(1);
+                  if (editableActualValues[categoryName]) {
+                    weeklyDemand = Object.keys(editableActualValues[categoryName]).reduce((sum, product) => 
+                      sum + (editableActualValues[categoryName][product]['w36'] || 0), 0);
+                  }
+                } else {
+                  currentStock = selectedSKU === 'pistakio-classic' ? 6581
+                    : selectedSKU === 'pistakio-salted' ? 3638
+                    : selectedSKU === 'pistakio-chocolate' ? 2811
+                    : selectedSKU === 'almond-classic' ? 4437
+                    : selectedSKU === 'almond-honey' ? 3393
+                    : 2500;
+                  const productName = selectedSKU.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                  for (const category of Object.keys(editableActualValues)) {
+                    if (editableActualValues[category][productName]) {
+                      weeklyDemand = editableActualValues[category][productName]['w36'] || 0;
+                      break;
+                    }
+                  }
+                }
+              } else {
+                currentStock = selectedSKU === 'all-categories' ? 15000
+                  : selectedSKU === 'pistakios' ? 9750
+                  : selectedSKU === 'almonds' ? 5250
+                  : selectedSKU === 'pistakio-classic' ? 6581
+                  : selectedSKU === 'pistakio-salted' ? 3638
+                  : selectedSKU === 'pistakio-chocolate' ? 2811
+                  : selectedSKU === 'almond-classic' ? 4437
+                  : selectedSKU === 'almond-honey' ? 3393
+                  : 2500;
+                weeklyDemand = selectedSKU === 'all-categories' ? 1102
+                  : selectedSKU === 'pistakios' ? 692
+                  : selectedSKU === 'almonds' ? 410
+                  : selectedSKU === 'pistakio-classic' ? 346
+                  : selectedSKU === 'pistakio-salted' ? 192
+                  : selectedSKU === 'pistakio-chocolate' ? 154
+                  : selectedSKU === 'almond-classic' ? 238
+                  : selectedSKU === 'almond-honey' ? 172
+                  : 200;
+              }
+              
+              const dailyDemand = weeklyDemand / 7;
+              const currentCoverage = dailyDemand > 0 ? currentStock / dailyDemand : 0;
+              
+              return currentCoverage >= 14 ? 'green' : currentCoverage >= 10 ? 'yellow' : 'red';
+            })()
+          }
+          trend={0}
         />
       </div>
 
@@ -896,8 +913,7 @@ export default function SalesForecastPage() {
         </div>
         <div className='mt-4 text-center text-sm text-gray-500'>
           <p>
-            W33-W36: Actual values from table • W37+: Forecast based on W36 data • 
-            Adjust forecast with slider above
+            {toWeekLabel(weekStart)}–{toWeekLabel(weekEnd)} selected • W33–W36 show Actuals from table • W37+ are Forecast based on W36
           </p>
           <p className='mt-1 text-xs text-blue-600'>
             💡 Edit values in the table below to see changes reflected here

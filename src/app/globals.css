@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@plugin '../config/hero.js';
+@source '../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
+@custom-variant dark (&:is(.dark *));
 
 /* Fuente PP Mondwest */
 @font-face {
@@ -274,6 +277,52 @@
   /* Colores */
   --color-background: light-dark(#ffffff, #0a0a0a);
   --color-foreground: light-dark(#171717, #ededed);
+
+  /* Category Colors */
+  --category-community: #e0f2fe;
+  --category-community-text: #0369a1;
+  
+  --category-flavors: #fef3c7;
+  --category-flavors-text: #92400e;
+  
+  --category-pr: #fce7f3;
+  --category-pr-text: #9f1239;
+  
+  --category-event: #f3e8ff;
+  --category-event-text: #6b21a8;
+  
+  --category-financing: #d1fae5;
+  --category-financing-text: #065f46;
+  
+  --category-investor: #dbeafe;
+  --category-investor-text: #1e40af;
+  
+  --category-copacker: #fed7aa;
+  --category-copacker-text: #9a3412;
+  
+  --category-logistics: #e0e7ff;
+  --category-logistics-text: #3730a3;
+  
+  --category-legal: #fecaca;
+  --category-legal-text: #991b1b;
+  
+  --category-branding: #fbcfe8;
+  --category-branding-text: #831843;
+  
+  --category-accelerator: #ccfbf1;
+  --category-accelerator-text: #115e59;
+  
+  --category-equipment: #e5e7eb;
+  --category-equipment-text: #374151;
+  
+  --category-retailer: #bfdbfe;
+  --category-retailer-text: #1e40af;
+  
+  --category-accounting: #fef9c3;
+  --category-accounting-text: #854d0e;
+  
+  --category-sales: #dcfce7;
+  --category-sales-text: #166534;
 }
 
 /* Animaciones personalizadas */

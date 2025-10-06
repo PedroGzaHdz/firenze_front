@@ -64,15 +64,30 @@ export async function generateAIResponseAction(chatHistory) {
         "Response with plain text only, avoid using markdown or any special formatting." + 
         "\n" + 
         "In case the user has attached a document, use the following context to inform your response, this information is in user" +
-        " messages."
+        " messages." +
+        "\n" +
+        "When the user mentions 'vendor' or 'vendors' in their question, the complete vendors table from the database will be automatically attached to provide you with full context about all vendors, including their names, locations, categories, and websites."
     };
 
-    const messagesAdapted = chatHistory.map((message) => ({
-      role: message?.type === 'user' ? 'user' : 'assistant',
-      content: message?.message + (message?.type === 'user' && message?.document ?
-        "\n document context:" + JSON.stringify(message?.document)
-        : ''),
-    }));
+    const messagesAdapted = chatHistory.map((message) => {
+      let content = message?.message;
+      
+      // Add document context if present
+      if (message?.type === 'user' && message?.document) {
+        content += "\n document context:" + JSON.stringify(message?.document);
+      }
+      
+      // Add vendors table context if present
+      if (message?.type === 'user' && message?.vendorsTable) {
+        content += "\n\nVendors Table Context (complete database):\n" + 
+          JSON.stringify(message.vendorsTable, null, 2);
+      }
+      
+      return {
+        role: message?.type === 'user' ? 'user' : 'assistant',
+        content: content,
+      };
+    });
 
     const response = await client.chat.completions.create({
       model: 'gpt-4o-mini',
